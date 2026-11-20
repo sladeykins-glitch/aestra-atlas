@@ -92,7 +92,10 @@
 .ink-actions button:disabled{opacity:.45;cursor:not-allowed}
 .ink-save-status{flex:1;min-width:220px;text-align:right;font:italic 16px/1.2 'Cormorant Garamond',serif;color:#b6d5bb}
 .ink-save-status.ink-warning{color:#ffa39a}
-.ink-canvas{position:absolute;z-index:10;inset:0;width:100%;height:100%;pointer-events:none;touch-action:auto;opacity:.97}
+.ink-canvas{position:absolute;z-index:10;inset:0;width:100%;height:100%;pointer-events:none;touch-action:auto;opacity:.97;transition:opacity 180ms ease-in-out}
+/* The canvas (including newly mounted canvases) remains invisible until the leaf finishes turning. */
+.book-spread.ink-turn-pending .ink-canvas{opacity:0;pointer-events:none}
+@media(prefers-reduced-motion:reduce){.ink-canvas{transition-duration:.01ms!important}}
 .ink-mode .ink-canvas{pointer-events:auto;touch-action:none;cursor:crosshair}
 .ink-mode .paper-page:has(.ink-canvas){box-shadow:inset 0 0 0 2px #76dae355,inset 0 0 15px #35f2f333}
 .ink-mode .ink-canvas.is-selected{outline:1px solid #92f8f666;outline-offset:-3px}
