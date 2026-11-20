@@ -219,3 +219,5 @@
  .scrapbook-inspector{padding:10px}
  .scrapbook-new-button{padding:5px 8px}
 }
+
+@media(max-width:760px){.tool-right{flex-wrap:wrap;justify-content:center}.scrapbook-new-button span{display:none}.scrapbook-new-button{font-size:15px;padding:6px 10px}}
