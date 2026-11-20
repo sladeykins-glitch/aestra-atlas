@@ -14,7 +14,7 @@
   const clamp=(v,min,max)=>Math.max(min,Math.min(max,v));
   const num=(v,fallback)=>Number.isFinite(Number(v))?Number(v):fallback;
   let draft=null,selectedId=null,pointer=null,dirty=false,saving=false;
-  let undoStack=[],redoStack=[],textEditSession=false,rotateSession=false,zoom=100;
+  let undoStack=[],redoStack=[],textEditSession=false,rotateSession=false,zoom=100,inspectedId=null;
   const snapshot=()=>draft?.items.map(item=>({...item}))||[];
   const resetEditSessions=()=>{textEditSession=false;rotateSession=false;};
   function syncHistoryControls(){
@@ -156,7 +156,10 @@
     panel.hidden=!item;
     $('#scrapbookSelectedName').textContent=item?(item.type==='text'?'Handwritten note':'Illustration'):'';
     $('#scrapbookTextLabel').hidden=!item||item.type!=='text';
-    if(item?.type==='text'&&document.activeElement!==$('#scrapbookText'))$('#scrapbookText').value=item.text;
+    if(item?.type==='text'&&(item.id!==inspectedId||document.activeElement!==$('#scrapbookText'))){
+      $('#scrapbookText').value=item.text;
+    }
+    inspectedId=item?.id||null;
     $('#scrapbookRemove').disabled=!item||saving;
     $('#scrapbookDuplicate').disabled=!item||saving;
     $('#scrapbookToFront').disabled=!item||saving||draft.items.indexOf(item)===draft.items.length-1;
@@ -188,7 +191,7 @@
     draft={id:entry?.id||null,revision:entry?.revision||null,originalImages:entry?{...(entry._scrapImages||{})}:{},
       title:entry?.title||'',section:entry?.section||'journal',
       visibility:entry?.visibility||'party',items:entry?itemsFor(entry):[]};
-    dirty=false;selectedId=null;pointer=null;undoStack=[];redoStack=[];resetEditSessions();
+    dirty=false;selectedId=null;pointer=null;inspectedId=null;undoStack=[];redoStack=[];resetEditSessions();
     const sections=chapters.filter(c=>c.id!=='all');
     $('#scrapbookSection').innerHTML=sections.map(c=>'<option value="'+esc(c.id)+'">'+esc(c.name)+'</option>').join('');
     $('#scrapbookTitle').value=draft.title;$('#scrapbookSection').value=draft.section;
@@ -209,10 +212,10 @@
   function cleanup(){
     $('#scrapbookDialog').close();
     for(const url of ownedUrls)URL.revokeObjectURL(url);
-    ownedUrls.clear();draft=null;selectedId=null;pointer=null;dirty=false;undoStack=[];redoStack=[];resetEditSessions();zoom=100;
+    ownedUrls.clear();draft=null;selectedId=null;pointer=null;inspectedId=null;dirty=false;undoStack=[];redoStack=[];resetEditSessions();zoom=100;
   }
   function onPointerDown(e){
-    if(!draft||saving||e.button!==0)return;
+    if(!draft||saving||pointer||e.button!==0||e.pointerType==='touch'&&e.isPrimary===false)return;
     const elem=e.target.closest('[data-scrap-item]');
     if(!elem){selectedId=null;resetEditSessions();refreshSelection();return;}
     const id=elem.dataset.scrapItem, item=draft.items.find(i=>i.id===id);
@@ -447,7 +450,8 @@
     $('#scrapbookEditorStage').addEventListener('pointermove',onPointerMove);
     $('#scrapbookEditorStage').addEventListener('pointerup',onPointerUp);
     $('#scrapbookEditorStage').addEventListener('pointercancel',onPointerUp);
-    for(const selector of ['#scrapbookTitle','#scrapbookSection','#scrapbookVisibility'])
+    $('#scrapbookTitle').addEventListener('input',markDirty);
+    for(const selector of ['#scrapbookSection','#scrapbookVisibility'])
       $(selector).addEventListener('change',markDirty);
     $('#scrapbookSave').addEventListener('click',save);
     $('#scrapbookCancel').addEventListener('click',close);
