@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700&family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600&family=IM+Fell+English:ital@0;1&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=20261120-chapters-2">
+<link rel="stylesheet" href="styles.css?v=20261120-scrapbook82">
 </head>
 <body>
 <div class="ambient-stars" aria-hidden="true"></div>
@@ -176,8 +176,10 @@
     <div class="scrapbook-toolbar" aria-label="Scrapbook tools">
       <button type="button" id="scrapbookAddText" class="gold-action">✎ Add text box</button>
       <button type="button" id="scrapbookAddImage" class="gold-action">▣ Add illustration</button>
+      <button type="button" id="scrapbookUndo" class="muted-action scrapbook-history-button" title="Undo last layout change" disabled>↶ Undo</button>
+      <button type="button" id="scrapbookRedo" class="muted-action scrapbook-history-button" title="Redo layout change" disabled>↷ Redo</button>
       <input type="file" id="scrapbookImageInput" accept="image/png,image/jpeg,image/webp,image/gif" hidden>
-      <span class="scrapbook-toolbar-tip">Select an item, drag it to move, or pull its corner to resize.</span>
+      <span class="scrapbook-toolbar-tip">Decorate, arrange, overlap and rotate your discoveries.</span>
     </div>
     <div class="scrapbook-workspace">
       <div class="scrapbook-stage-wrap">
@@ -189,7 +191,21 @@
         <label class="field" id="scrapbookTextLabel">TEXT ON THE PAGE
           <textarea id="scrapbookText" rows="7" maxlength="3000" placeholder="Write something memorable..."></textarea>
         </label>
-        <p>Drag anywhere on the piece to move it. Pull the turquoise corner to resize. On a keyboard, use arrow keys to nudge.</p>
+        <label class="field scrapbook-style-field">APPEARANCE
+          <select id="scrapbookStyle" aria-label="Selected scrapbook piece appearance"></select>
+        </label>
+        <label class="field scrapbook-rotation-field">ROTATION
+          <div class="scrapbook-rotation-row">
+            <input id="scrapbookRotation" type="range" min="-18" max="18" step="1" value="0" aria-label="Rotation in degrees">
+            <output id="scrapbookRotationValue" for="scrapbookRotation">0°</output>
+          </div>
+        </label>
+        <div class="scrapbook-layer-controls">
+          <button type="button" id="scrapbookToFront" class="muted-action" title="Place over other pieces">⇧ Bring to front</button>
+          <button type="button" id="scrapbookToBack" class="muted-action" title="Place behind other pieces">⇩ Send to back</button>
+        </div>
+        <button type="button" class="muted-action scrapbook-duplicate" id="scrapbookDuplicate">⧉ Duplicate piece</button>
+        <p>Drag to move, pull the turquoise corner to resize, or use the arrow keys to nudge a selected piece.</p>
         <button type="button" class="danger-action" id="scrapbookRemove">Remove this piece</button>
       </aside>
     </div>
@@ -206,8 +222,8 @@
   <img id="zoomedIllustration" class="zoomed-illustration" alt="">
   <p class="illustration-zoom-hint" aria-hidden="true">✧ &nbsp; TAP ANYWHERE TO RETURN TO THE PAGE &nbsp; ✧</p>
 </dialog>
-<script src="scrapbook.js?v=20261120-chapters-2" defer></script>
-<script src="app.js?v=20261120-chapters-2" defer></script>
-<script src="ink.js?v=20261120-chapters-2" defer></script>
+<script src="scrapbook.js?v=20261120-scrapbook82" defer></script>
+<script src="app.js?v=20261120-scrapbook82" defer></script>
+<script src="ink.js?v=20261120-scrapbook82" defer></script>
 </body>
 </html>
