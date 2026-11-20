@@ -14,7 +14,7 @@
   const clamp=(v,min,max)=>Math.max(min,Math.min(max,v));
   const num=(v,fallback)=>Number.isFinite(Number(v))?Number(v):fallback;
   let draft=null,selectedId=null,pointer=null,dirty=false,saving=false;
-  let undoStack=[],redoStack=[],textEditSession=false,rotateSession=false;
+  let undoStack=[],redoStack=[],textEditSession=false,rotateSession=false,zoom=100;
   const snapshot=()=>draft?.items.map(item=>({...item}))||[];
   const resetEditSessions=()=>{textEditSession=false;rotateSession=false;};
   function syncHistoryControls(){
@@ -111,6 +111,44 @@
     syncInspector();
     syncHistoryControls();
   }
+  // Select without replacing every image element. Recreating their markup during a
+  // touch can cause a flicker and can interrupt an active pointer capture.
+  function refreshSelection(){
+    const stage=$('#scrapbookEditorStage');
+    if(!stage||!draft)return;
+    stage.querySelectorAll('[data-scrap-item]').forEach(element=>{
+      const index=draft.items.findIndex(item=>item.id===element.dataset.scrapItem);
+      if(index<0)return;
+      const item=draft.items[index],active=item.id===selectedId;
+      element.classList.toggle('is-selected',active);
+      element.setAttribute('style',itemStyle(item,index,active));
+      const handle=element.querySelector('.scrapbook-resize-handle');
+      if(active&&!handle){
+        const h=document.createElement('span');
+        h.className='scrapbook-resize-handle';h.dataset.scrapResize='true';
+        h.title='Drag to resize';h.setAttribute('aria-hidden','true');
+        element.appendChild(h);
+      }else if(!active&&handle)handle.remove();
+    });
+    syncInspector();syncHistoryControls();
+  }
+  // The editor zooms visually only; saved coordinates never change.
+  function setZoom(next){
+    const value=clamp(Math.round(num(next,100)/25)*25,100,250);
+    const stage=$('#scrapbookEditorStage'),viewport=$('#scrapbookCanvasViewport');
+    if(!stage||!viewport)return;
+    const previous=zoom,ratio=value/previous;
+    const centerX=viewport.scrollLeft+viewport.clientWidth/2;
+    const centerY=viewport.scrollTop+viewport.clientHeight/2;
+    zoom=value;
+    stage.style.width=zoom+'%';
+    $('#scrapbookZoomLabel').textContent=zoom+'%';
+    $('#scrapbookZoomOut').disabled=zoom<=100;
+    $('#scrapbookZoomIn').disabled=zoom>=250;
+    $('#scrapbookZoomFit').disabled=zoom===100;
+    viewport.scrollLeft=Math.max(0,centerX*ratio-viewport.clientWidth/2);
+    viewport.scrollTop=Math.max(0,centerY*ratio-viewport.clientHeight/2);
+  }
   function selected(){return draft?.items.find(i=>i.id===selectedId)||null}
   function syncInspector(){
     const item=selected(),panel=$('#scrapbookInspector');
@@ -161,7 +199,7 @@
     $('#scrapbookStatus').textContent='Drag to move • pull the corner to resize';
     $('#scrapbookImageInput').value='';
     $('#scrapbookHeading').textContent=entry?'Arrange your scrapbook':'Create a scrapbook';
-    $('#scrapbookDialog').showModal();drawBoard();
+    $('#scrapbookDialog').showModal();zoom=100;setZoom(100);drawBoard();
   }
   function close(){
     if(!draft||saving)return;
@@ -171,12 +209,12 @@
   function cleanup(){
     $('#scrapbookDialog').close();
     for(const url of ownedUrls)URL.revokeObjectURL(url);
-    ownedUrls.clear();draft=null;selectedId=null;pointer=null;dirty=false;undoStack=[];redoStack=[];resetEditSessions();
+    ownedUrls.clear();draft=null;selectedId=null;pointer=null;dirty=false;undoStack=[];redoStack=[];resetEditSessions();zoom=100;
   }
   function onPointerDown(e){
     if(!draft||saving||e.button!==0)return;
     const elem=e.target.closest('[data-scrap-item]');
-    if(!elem){selectedId=null;resetEditSessions();drawBoard();return;}
+    if(!elem){selectedId=null;resetEditSessions();refreshSelection();return;}
     const id=elem.dataset.scrapItem, item=draft.items.find(i=>i.id===id);
     if(!item)return;
     const resize=!!e.target.closest('[data-scrap-resize]');
@@ -186,9 +224,7 @@
     pointer={id:e.pointerId,resize,changed:false,startX:e.clientX,startY:e.clientY,origin:{x:item.x,y:item.y,w:item.w,h:item.h},scaleX:W/rect.width,scaleY:H/rect.height};
     e.preventDefault();
     $('#scrapbookEditorStage').setPointerCapture(e.pointerId);
-    elem.classList.add('is-selected');
-    if(!elem.querySelector('.scrapbook-resize-handle'))drawBoard();
-    syncInspector();
+    refreshSelection();
   }
   function onPointerMove(e){
     if(!pointer||pointer.id!==e.pointerId||!draft)return;
@@ -212,7 +248,7 @@
   function onPointerUp(e){
     if(!pointer||pointer.id!==e.pointerId)return;
     try{if($('#scrapbookEditorStage').hasPointerCapture(e.pointerId))$('#scrapbookEditorStage').releasePointerCapture(e.pointerId);}catch{}
-    pointer=null;drawBoard();
+    pointer=null;refreshSelection();
   }
   function layoutForSave(){
     return draft.items.map(it=>{
@@ -301,6 +337,38 @@
   }
   function init(){
     $('#scrapbookNewBtn').addEventListener('click',()=>open());
+    $('#scrapbookZoomOut').addEventListener('click',()=>setZoom(zoom-25));
+    $('#scrapbookZoomIn').addEventListener('click',()=>setZoom(zoom+25));
+    $('#scrapbookZoomFit').addEventListener('click',()=>setZoom(100));
+    // A tab refresh or accidental navigation must not silently discard work.
+    window.addEventListener('beforeunload',event=>{
+      if(draft&&dirty&&!saving){event.preventDefault();event.returnValue='';}
+    });
+    // Mobile-friendly precise adjustment buttons complement touch dragging.
+    document.querySelectorAll('[data-scrap-nudge]').forEach(button=>{
+      button.addEventListener('click',()=>{
+        const item=selected();if(!item||saving||pointer)return;
+        const direction=button.dataset.scrapNudge;
+        let x=item.x,y=item.y;
+        if(direction==='left')x=clamp(x-10,0,W-item.w);
+        if(direction==='right')x=clamp(x+10,0,W-item.w);
+        if(direction==='up')y=clamp(y-10,0,H-item.h);
+        if(direction==='down')y=clamp(y+10,0,H-item.h);
+        if(x===item.x&&y===item.y)return;
+        checkpoint();item.x=x;item.y=y;markDirty();refreshSelection();
+      });
+    });
+    document.querySelectorAll('[data-scrap-resize-by]').forEach(button=>{
+      button.addEventListener('click',()=>{
+        const item=selected();if(!item||saving||pointer)return;
+        const direction=Number(button.dataset.scrapResizeBy);
+        if(![-1,1].includes(direction))return;
+        const width=clamp(item.w+direction*30,item.type==='text'?180:100,W-item.x);
+        const height=clamp(item.h+direction*42,item.type==='text'?100:90,H-item.y);
+        if(width===item.w&&height===item.h)return;
+        checkpoint();item.w=width;item.h=height;markDirty();refreshSelection();
+      });
+    });
     $('#scrapbookAddText').addEventListener('click',()=>addItem('text'));
     $('#scrapbookAddImage').addEventListener('click',()=>$('#scrapbookImageInput').click());
     $('#scrapbookImageInput').addEventListener('change',e=>{
