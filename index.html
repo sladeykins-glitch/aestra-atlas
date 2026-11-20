@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700&family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600&family=IM+Fell+English:ital@0;1&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=20261120-scrapbook82">
+<link rel="stylesheet" href="styles.css?v=20261120-scrapbook83">
 </head>
 <body>
 <div class="ambient-stars" aria-hidden="true"></div>
@@ -183,8 +183,19 @@
     </div>
     <div class="scrapbook-workspace">
       <div class="scrapbook-stage-wrap">
-        <button type="button" id="scrapbookStageBack" class="scrapbook-deselect">Deselect item</button>
-        <div id="scrapbookEditorStage" class="scrapbook-stage scrapbook-editor-stage" tabindex="0" aria-label="Scrapbook layout canvas"></div>
+        <div class="scrapbook-stage-tools">
+          <div class="scrapbook-zoom-tools" aria-label="Page zoom">
+            <button type="button" id="scrapbookZoomOut" class="muted-action" aria-label="Zoom out">−</button>
+            <span id="scrapbookZoomLabel" aria-live="polite">100%</span>
+            <button type="button" id="scrapbookZoomIn" class="muted-action" aria-label="Zoom in">＋</button>
+            <button type="button" id="scrapbookZoomFit" class="muted-action" title="Fit the full page in view">Fit page</button>
+          </div>
+          <button type="button" id="scrapbookStageBack" class="scrapbook-deselect">Deselect</button>
+        </div>
+        <div class="scrapbook-canvas-viewport" id="scrapbookCanvasViewport" aria-label="Scroll the zoomed scrapbook canvas">
+          <div id="scrapbookEditorStage" class="scrapbook-stage scrapbook-editor-stage" tabindex="0" aria-label="Scrapbook page: tap a piece to select it, drag to move it"></div>
+        </div>
+        <p class="scrapbook-mobile-hint">Tip: Zoom in for precise placement. Scroll the blank parchment to move around; drag a piece to rearrange it.</p>
       </div>
       <aside id="scrapbookInspector" class="scrapbook-inspector" hidden>
         <h3 id="scrapbookSelectedName">Selected element</h3>
@@ -204,6 +215,20 @@
           <button type="button" id="scrapbookToFront" class="muted-action" title="Place over other pieces">⇧ Bring to front</button>
           <button type="button" id="scrapbookToBack" class="muted-action" title="Place behind other pieces">⇩ Send to back</button>
         </div>
+        <div class="scrapbook-fine-tools" aria-label="Precise move and resize controls">
+          <div class="scrapbook-fine-label">NUDGE POSITION <span>10 px</span></div>
+          <div class="scrapbook-nudge-grid">
+            <button type="button" data-scrap-nudge="up" aria-label="Move up">↑</button>
+            <button type="button" data-scrap-nudge="left" aria-label="Move left">←</button>
+            <button type="button" data-scrap-nudge="down" aria-label="Move down">↓</button>
+            <button type="button" data-scrap-nudge="right" aria-label="Move right">→</button>
+          </div>
+          <div class="scrapbook-fine-label">RESIZE PIECE</div>
+          <div class="scrapbook-size-grid">
+            <button type="button" data-scrap-resize-by="-1" aria-label="Make smaller">− Smaller</button>
+            <button type="button" data-scrap-resize-by="1" aria-label="Make larger">＋ Larger</button>
+          </div>
+        </div>
         <button type="button" class="muted-action scrapbook-duplicate" id="scrapbookDuplicate">⧉ Duplicate piece</button>
         <p>Drag to move, pull the turquoise corner to resize, or use the arrow keys to nudge a selected piece.</p>
         <button type="button" class="danger-action" id="scrapbookRemove">Remove this piece</button>
@@ -222,8 +247,8 @@
   <img id="zoomedIllustration" class="zoomed-illustration" alt="">
   <p class="illustration-zoom-hint" aria-hidden="true">✧ &nbsp; TAP ANYWHERE TO RETURN TO THE PAGE &nbsp; ✧</p>
 </dialog>
-<script src="scrapbook.js?v=20261120-scrapbook82" defer></script>
-<script src="app.js?v=20261120-scrapbook82" defer></script>
-<script src="ink.js?v=20261120-scrapbook82" defer></script>
+<script src="scrapbook.js?v=20261120-scrapbook83" defer></script>
+<script src="app.js?v=20261120-scrapbook83" defer></script>
+<script src="ink.js?v=20261120-scrapbook83" defer></script>
 </body>
 </html>
