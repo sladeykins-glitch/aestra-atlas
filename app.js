@@ -51,7 +51,7 @@ function canEdit(){return !supabase||Boolean(role)}
     const rank=(order.get(a.section)??999)-(order.get(b.section)??999);
     if(rank)return rank;
     const time=(v)=>Date.parse(v.chapter_added_at||v.updated_at||'')||0;
-    return time(a)-time(b);
+    return time(a)-time(b)||String(a.id||'').localeCompare(String(b.id||''));
    });
  }
 function chapter(id){return chapters.find(c=>c.id===id)||chapters[0]}
@@ -130,7 +130,19 @@ function unlock(){if(opened)return;opened=true;$('#coverInstruction').textConten
  setTimeout(()=>{$('#openScene').style.display='flex';$('#openScene').setAttribute('aria-hidden','false');requestAnimationFrame(()=>$('#openScene').classList.add('revealed'));$('#closedScene').classList.add('disappeared');renderBook();showWhisper('At last. A new traveller has found the key.')},window.matchMedia('(prefers-reduced-motion: reduce)').matches?150:1580)}
 function closeBook(){if(!opened)return;pageTurnSerial++;animating=false;$('#bookSpread').classList.remove('ink-turn-pending');$('#turnLeaf').className='turn-leaf';window.ATLASInk?.setEnabled(false);window.ATLASInk?.setReveal('off');opened=false;$('#openScene').classList.remove('revealed');$('#openScene').setAttribute('aria-hidden','true');$('#openScene').style.display='none';$('#closedScene').classList.remove('disappeared');$('#coverInstruction').textContent='✧   TOUCH THE GLOWING KEYHOLE   ✧';requestAnimationFrame(()=>requestAnimationFrame(()=>{if(!opened)$('#closedScene').classList.remove('unsealing')}))}
 function openContents(){renderContentsDialog();$('#contentsDialog').showModal()}
-function renderContentsDialog(){const visibles=visibleEntries();let body='';for(const c of chapters.filter(c=>c.id!=='all')){const items=visibles.map((e,i)=>({e,i})).filter(x=>x.e.section===c.id);body+=`<div class="contents-group">${escapeHtml(c.icon)} &nbsp; ${escapeHtml(c.name)} <span>(${items.length})</span></div>`;body+=items.length?items.map(({e,i})=>`<button class="contents-item" data-goto="${i+2}"><span>${escapeHtml(e.title)}</span><span class="dots"></span><small>${String(i+1).padStart(2,'0')}</small></button>`).join(''):'<p style="font-style:italic;color:#8d6e53">No pages recorded in this chapter.</p>'}$('#contentsList').innerHTML=body}
+// Build the contents from the same ordered pages that are actually printed in the book.
+function renderContentsDialog(){
+ const leaves=getPages().slice(2);
+ let body='';
+ for(const c of chapters.filter(c=>c.id!=='all')){
+  const items=leaves.map((p,i)=>({entry:p.entry,index:i})).filter(x=>x.entry.section===c.id);
+  body+=`<div class="contents-group">${escapeHtml(c.icon)} &nbsp; ${escapeHtml(c.name)} <span>(${items.length})</span></div>`;
+  body+=items.length
+   ?items.map(({entry,index})=>`<button class="contents-item" data-goto-entry="${escapeHtml(entry.id)}"><span>${escapeHtml(entry.title)}</span><span class="dots"></span><small>${String(index+1).padStart(2,'0')}</small></button>`).join('')
+   :'<p style="font-style:italic;color:#8d6e53">No pages recorded in this chapter.</p>';
+ }
+ $('#contentsList').innerHTML=body;
+}
 function editorOptions(){return chapters.filter(c=>c.id!=='all').map(c=>`<option value="${escapeHtml(c.id)}">${escapeHtml(c.name)}</option>`).join('')}
 
 /* Enlarged illustration viewer: FLIP-like motion back to its original parchment position. */
@@ -507,7 +519,15 @@ illustrationZoom.addEventListener('click',dismissIllustration);
 illustrationZoom.addEventListener('cancel',event=>{event.preventDefault();dismissIllustration()});
 
 $('#bookSpread').addEventListener('click',e=>{const scrapbookEdit=e.target.closest('[data-edit-scrapbook]');if(scrapbookEdit){window.ATLASScrapbook?.open(scrapbookEdit.dataset.editScrapbook);return}const history=e.target.closest('[data-history-entry]');if(history){openHistory(history.dataset.historyEntry);return}const edit=e.target.closest('[data-edit-entry]');if(edit){openEditor(edit.dataset.editEntry);return}if(e.target.closest('[data-write-entry]')){openEditor();return}if(e.target.closest('[data-show-contents]')){openContents();return}const chapterLink=e.target.closest('[data-jump-chapter]');if(chapterLink){const i=visibleEntries().findIndex(x=>x.section===chapterLink.dataset.jumpChapter);if(i>=0)jumpTo(2+i);else openContents()}});
-$('#contentsList').addEventListener('click',e=>{const link=e.target.closest('[data-goto]');if(link){$('#contentsDialog').close();jumpTo(Number(link.dataset.goto))}});
+$('#contentsList').addEventListener('click',e=>{
+ const link=e.target.closest('[data-goto-entry]');
+ if(!link)return;
+ const targetId=link.dataset.gotoEntry;
+ const index=getPages().findIndex(p=>p.kind==='entry'&&String(p.entry.id)===targetId);
+ if(index<0)return;
+ $('#contentsDialog').close();
+ jumpTo(index);
+});
 $('#imageInput').addEventListener('change',e=>{selectedFile=e.target.files?.[0]||null;if(imagePreviewUrl)URL.revokeObjectURL(imagePreviewUrl);imagePreviewUrl=selectedFile?URL.createObjectURL(selectedFile):null;$('#imagePreview').innerHTML=previewImage(imagePreviewUrl)});
 $('#requestJoin').addEventListener('click',requestAccess);
 $('#cloudImportFile').addEventListener('change',e=>{if(e.target.files?.[0])publishCloudBackup(e.target.files[0]);e.target.value=''});
