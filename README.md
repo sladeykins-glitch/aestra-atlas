@@ -4,6 +4,19 @@ Live site: https://sladeykins-glitch.github.io/aestra-atlas/
 
 A shared fantasy campaign archive for the world of Aestra, built as an interactive book. Hosted on GitHub Pages and connected to Supabase Auth, Database, Realtime and private Storage.
 
+## Version 8.3 — Mobile Improvements and Final Polish
+
+The Scrapbook editor now has a zoomable page workspace (100–250%) with **Zoom Out**, **Zoom In** and **Fit Page** controls. On a phone or tablet, zooming enlarges the canvas inside a scrollable viewport, without changing the positions saved in the shared archive.
+
+- **Touch-friendly tools:** Larger selected-item resize handles, mobile-friendly buttons, and swipe-to-pan on empty parchment.
+- **Fine positioning:** The selected element's panel includes four directional nudge buttons and two size controls for precise editing without needing a mouse.
+- **Better performance:** Selecting, dragging or resizing an item no longer unnecessarily recreates every image element. This reduces image flicker while arranging pages.
+- **Unsaved-work protection:** The editor warns when you attempt to close with unsaved changes; a browser navigation warning also appears where the browser supports it.
+- **Input safeguards:** Secondary touches are ignored during gestures, selecting a different note updates its text inspector, and title edits mark the page as changed immediately.
+- **Original layouts remain compatible:** Scrapbooks made in 8.1/8.2 use the same coordinates, images, decorations, layer order and shared save logic.
+
+No Supabase migration was necessary. The **Classic Page** display and editor have not been changed.
+
 ## Version 8.2 — Scrapbook Workshop
 
 The separate scrapbook editor now offers decorative paper and photo treatments, adjustable rotation and front/back layering. Select an element to change its appearance or rotate it from -18° to +18°.
@@ -25,7 +38,7 @@ Appearance and rotation are stored as `style` and `angle` per item in the existi
 
 Scrapbook pages support multiple private illustrations, GM-only visibility, revision history, mobile layout and live multi-user read access. **Do not assume two people can edit the same page simultaneously without a conflict**: the revision check protects the most recent saved layout.
 
-Current limits: 32 elements / 12 pictures per scrapbook; image uploads must be PNG, JPG, WebP or GIF, no more than 5 MB each. Layouts use a portrait canvas. The decorative pinned-paper styles and advanced collaborative co-editing remain later enhancements.
+Current limits: 32 elements / 12 pictures per scrapbook; image uploads must be PNG, JPG, WebP or GIF, no more than 5 MB each. Layouts use a portrait canvas. Advanced simultaneous co-editing of a single scrapbook remains a later enhancement.
 
 ### Storage / schema
 
