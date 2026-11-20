@@ -71,15 +71,42 @@ function renderBook(){const pages=getPages();pageIndex=Math.min(Math.max(pageInd
  window.ATLASInk?.mount();
 }
 function showWhisper(msg){$('#whisper').textContent=`“${msg}”`}
+// Keep the canvas ink hidden for the entire turn: fade out, turn, then fade in after mounting the new page.
+let pageTurnSerial=0;
 function jumpTo(n,animated=true){const pages=getPages();n=Math.max(0,Math.min(pages.length-1,n));if(!isMobile())n-=n%2;if(animating||n===pageIndex)return;
  if(window.ATLASInk?.isEnabled())window.ATLASInk.setEnabled(false);
  if(!opened||!animated||window.matchMedia('(prefers-reduced-motion: reduce)').matches){pageIndex=n;renderBook();return}
- animating=true;const leaf=$('#turnLeaf');leaf.className='turn-leaf '+(n>pageIndex?'forward':'backward');setTimeout(()=>{pageIndex=n;renderBook()},340);setTimeout(()=>{leaf.className='turn-leaf';animating=false},740);
+ animating=true;
+ const spread=$('#bookSpread'),leaf=$('#turnLeaf'),direction=n>pageIndex?'forward':'backward',serial=++pageTurnSerial;
+ // The CSS fade completes before the paper begins moving.
+ spread.classList.add('ink-turn-pending');
+ setTimeout(()=>{
+  if(serial!==pageTurnSerial)return;
+  leaf.className='turn-leaf '+direction;
+  // The next page and its ink canvases are mounted *while still invisible*.
+  setTimeout(()=>{
+   if(serial!==pageTurnSerial)return;
+   pageIndex=n;
+   renderBook();
+   window.ATLASInk?.paintAll();
+  },340);
+  setTimeout(()=>{
+   if(serial!==pageTurnSerial)return;
+   leaf.className='turn-leaf';
+   // Ensure all new strokes have been painted before revealing them.
+   window.ATLASInk?.paintAll();
+   requestAnimationFrame(()=>{
+    if(serial!==pageTurnSerial)return;
+    spread.classList.remove('ink-turn-pending');
+    animating=false;
+   });
+  },740);
+ },210);
 }
 function turn(direction){jumpTo(pageIndex+direction*(isMobile()?1:2))}
 function unlock(){if(opened)return;opened=true;$('#coverInstruction').textContent='THE ARCHIVE STIRS...';$('#closedScene').classList.add('unsealing');
  setTimeout(()=>{$('#openScene').style.display='flex';$('#openScene').setAttribute('aria-hidden','false');requestAnimationFrame(()=>$('#openScene').classList.add('revealed'));$('#closedScene').classList.add('disappeared');renderBook();showWhisper('At last. A new traveller has found the key.')},window.matchMedia('(prefers-reduced-motion: reduce)').matches?150:1580)}
-function closeBook(){if(!opened)return;window.ATLASInk?.setEnabled(false);window.ATLASInk?.setReveal('off');opened=false;$('#openScene').classList.remove('revealed');$('#openScene').setAttribute('aria-hidden','true');$('#openScene').style.display='none';$('#closedScene').classList.remove('disappeared');$('#coverInstruction').textContent='✧   TOUCH THE GLOWING KEYHOLE   ✧';requestAnimationFrame(()=>requestAnimationFrame(()=>{if(!opened)$('#closedScene').classList.remove('unsealing')}))}
+function closeBook(){if(!opened)return;pageTurnSerial++;animating=false;$('#bookSpread').classList.remove('ink-turn-pending');$('#turnLeaf').className='turn-leaf';window.ATLASInk?.setEnabled(false);window.ATLASInk?.setReveal('off');opened=false;$('#openScene').classList.remove('revealed');$('#openScene').setAttribute('aria-hidden','true');$('#openScene').style.display='none';$('#closedScene').classList.remove('disappeared');$('#coverInstruction').textContent='✧   TOUCH THE GLOWING KEYHOLE   ✧';requestAnimationFrame(()=>requestAnimationFrame(()=>{if(!opened)$('#closedScene').classList.remove('unsealing')}))}
 function openContents(){renderContentsDialog();$('#contentsDialog').showModal()}
 function renderContentsDialog(){const visibles=visibleEntries();let body='';for(const c of chapters.filter(c=>c.id!=='all')){const items=visibles.map((e,i)=>({e,i})).filter(x=>x.e.section===c.id);body+=`<div class="contents-group">${escapeHtml(c.icon)} &nbsp; ${escapeHtml(c.name)} <span>(${items.length})</span></div>`;body+=items.length?items.map(({e,i})=>`<button class="contents-item" data-goto="${i+2}"><span>${escapeHtml(e.title)}</span><span class="dots"></span><small>${String(i+1).padStart(2,'0')}</small></button>`).join(''):'<p style="font-style:italic;color:#8d6e53">No pages recorded in this chapter.</p>'}$('#contentsList').innerHTML=body}
 function editorOptions(){return chapters.filter(c=>c.id!=='all').map(c=>`<option value="${escapeHtml(c.id)}">${escapeHtml(c.name)}</option>`).join('')}
