@@ -291,3 +291,76 @@
  .scrapbook-history-button{padding:9px 8px;font-size:10px}
  .scrapbook-layer-controls button{flex:1 1 100px}
 }
+
+
+/* ─── V8.3: scrapbook mobile editing, stable canvases and comfortable touch targets ─── */
+.scrapbook-stage-wrap{min-width:0;width:100%;max-width:640px}
+.scrapbook-stage-tools{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-bottom:8px}
+.scrapbook-zoom-tools{display:flex;align-items:center;gap:5px}
+.scrapbook-zoom-tools .muted-action{
+ min-height:40px;min-width:40px;padding:6px 8px;
+ display:inline-flex;align-items:center;justify-content:center
+}
+.scrapbook-zoom-tools #scrapbookZoomLabel{
+ min-width:43px;text-align:center;color:#573d2b;
+ font:600 11px/1 'Cinzel',serif;font-variant-numeric:tabular-nums
+}
+.scrapbook-stage-tools .scrapbook-deselect{min-height:40px;margin:0;padding:8px 12px}
+.scrapbook-canvas-viewport{
+ position:relative;width:100%;max-height:min(70vh,800px);
+ overflow:auto;overscroll-behavior:contain;
+ -webkit-overflow-scrolling:touch;
+ border:1px solid #9b7955;
+ background:#c9ab7c;
+ scrollbar-color:#9f7c53 #e9d0a8;scrollbar-width:thin
+}
+.scrapbook-editor-stage{
+ width:100%;max-width:none;min-width:0;
+ touch-action:pan-x pan-y;
+ user-select:none;position:relative;
+}
+.scrapbook-design-item{touch-action:none;-webkit-user-select:none;user-select:none}
+.scrapbook-design-item .scrapbook-note-content{pointer-events:none}
+.scrapbook-resize-handle{width:32px;height:32px;touch-action:none}
+.scrapbook-mobile-hint{
+ margin:8px 0 0;font:italic 16px/1.25 'Cormorant Garamond',serif;color:#735337
+}
+.scrapbook-fine-tools{border:1px solid #9e795a77;padding:10px;background:#ebd8b27d;margin:13px 0}
+.scrapbook-fine-label{
+ display:flex;align-items:center;justify-content:space-between;
+ margin:4px 0 8px;color:#75543d;font:600 10px/1.2 'Cinzel',serif;letter-spacing:.04em
+}
+.scrapbook-fine-label span{font:italic 14px/1 'Cormorant Garamond',serif;letter-spacing:0}
+.scrapbook-nudge-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:5px;margin-bottom:12px}
+.scrapbook-size-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.scrapbook-nudge-grid button,.scrapbook-size-grid button{
+ min-height:42px;min-width:0;padding:8px 4px;cursor:pointer;
+ border:1px solid #96724e;border-radius:3px;
+ background:#f3e0bcae;color:#5c412d;font:600 18px/1 'Cinzel',serif
+}
+.scrapbook-size-grid button{font:600 11px/1.2 'Cinzel',serif}
+.scrapbook-nudge-grid button:hover,.scrapbook-size-grid button:hover{background:#dfbf8d}
+.scrapbook-nudge-grid button:focus-visible,.scrapbook-size-grid button:focus-visible{
+ outline:2px solid #126e74;outline-offset:1px
+}
+@media(max-width:900px){
+ .scrapbook-canvas-viewport{max-height:64svh}
+ .scrapbook-inspector{max-width:640px;width:100%;margin:0 auto}
+ .scrapbook-resize-handle{width:42px;height:42px}
+ .scrapbook-stage-tools{position:sticky;top:0;z-index:6;padding:6px 0;background:#e5cda6}
+}
+@media(max-width:600px){
+ .scrapbook-dialog-inner{padding:12px}
+ .scrapbook-toolbar{gap:7px}
+ .scrapbook-toolbar .gold-action,.scrapbook-toolbar .muted-action{min-height:42px}
+ .scrapbook-stage-wrap{max-width:100%}
+ .scrapbook-canvas-viewport{max-height:58svh}
+ .scrapbook-inspector{border-width:1px;padding:12px}
+ .scrapbook-inspector .field input,.scrapbook-inspector .field select,.scrapbook-inspector .field textarea{font-size:17px}
+ .scrapbook-footer{position:sticky;bottom:0;z-index:9;padding:12px 3px 4px;background:#dfc69e;border-top:1px solid #9d7855}
+ .scrapbook-footer #scrapbookSave{min-height:44px}
+ .scrapbook-footer .scrapbook-save-status{flex-basis:120px;font-size:15px}
+}
+@media(prefers-reduced-motion:reduce){
+ .scrapbook-canvas-viewport{-webkit-overflow-scrolling:auto}
+}
