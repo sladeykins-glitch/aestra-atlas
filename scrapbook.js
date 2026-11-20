@@ -216,7 +216,7 @@
         }
         const id=draft.id||crypto.randomUUID();
         const newEntry={...old,id,title,section,visibility,body:'',page_kind:'scrapbook',
-          scrapbook_layout:layoutForSave(),updated_at:new Date().toISOString()};
+          scrapbook_layout:layoutForSave(),updated_at:new Date().toISOString(),chapter_added_at:old&&old.section===section?(old.chapter_added_at||old.updated_at||new Date().toISOString()):new Date().toISOString()};
         entries=old?entries.map(e=>e.id===id?newEntry:e):[...entries,newEntry];
         saveLocal();draft.id=id;
       }
