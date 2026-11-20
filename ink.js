@@ -101,7 +101,13 @@
     const spreads=visiblePageEntries();
     const pages=getPages(), start=Math.floor(pageIndex/2)*2;
     for(const [article,p] of [[$ink('#leftPage'),pages[start]],[$ink('#rightPage'),pages[start+1]]]) {
-      if(p?.kind==='entry') installCanvas(article,p.entry);
+      if(p?.kind!=='entry')continue;
+      // The other side of the spread may be unchanged; reuse its canvas instead of replacing it.
+      const existing=article.querySelector('.ink-canvas');
+      if(existing&&existing.dataset.entryId===String(p.entry.id)){
+        canvases.set(p.entry.id,existing);
+        observer?.observe(existing);
+      }else installCanvas(article,p.entry);
     }
     if (!spreads.some(e=>e.id===selectedEntryId)) selectedEntryId=spreads[0]?.id||null;
     selectEntry(selectedEntryId);
