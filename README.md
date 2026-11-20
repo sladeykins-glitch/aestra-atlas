@@ -4,6 +4,18 @@ Live site: https://sladeykins-glitch.github.io/aestra-atlas/
 
 A shared fantasy campaign archive for the world of Aestra, built as an interactive book. Hosted on GitHub Pages and connected to Supabase Auth, Database, Realtime and private Storage.
 
+## Version 8.2 — Scrapbook Workshop
+
+The separate scrapbook editor now offers decorative paper and photo treatments, adjustable rotation and front/back layering. Select an element to change its appearance or rotate it from -18° to +18°.
+
+- **Text styles:** Simple parchment (original appearance), torn parchment, field label and old letter paper.
+- **Image styles:** Simple border (original appearance), brass pin, wax seal, paper clip and torn edges.
+- **Layering:** Bring to front / Send to back, so pictures and notes can overlap.
+- **Duplication:** Duplicate a selected note or illustration (within the existing 32-piece / 12-image limits).
+- **Undo / redo:** 50 steps of in-editor history for changes to elements, including position, size, text, appearance, rotation, layering, duplication and deletion. Toolbar buttons are available; Ctrl/Cmd+Z and Ctrl/Cmd+Y work when focus is outside form fields.
+
+Appearance and rotation are stored as `style` and `angle` per item in the existing `scrapbook_layout` JSONB. Existing scrapbook items without these values keep their original styling. **Classic Pages remain unchanged.**
+
 ## Version 8.1 — Adventurer's Scrapbook
 
 **Two separate page types are available:**
