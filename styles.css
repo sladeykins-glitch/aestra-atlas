@@ -364,3 +364,10 @@
 @media(prefers-reduced-motion:reduce){
  .scrapbook-canvas-viewport{-webkit-overflow-scrolling:auto}
 }
+
+/* Keep mobile rotation sliders compact instead of inheriting text-input padding. */
+.scrapbook-rotation-row input[type="range"]{padding:0;border:0;min-height:32px;background:transparent;box-shadow:none}
+@media(max-width:600px){
+ .scrapbook-inspector .field input[type="range"]{padding:0;border:0;min-height:32px;background:transparent}
+ .scrapbook-inspector .scrapbook-rotation-field{margin-bottom:8px}
+}
