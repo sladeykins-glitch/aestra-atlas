@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#17110e">
+<meta name="description" content="A.T.L.A.S. — the living, collaborative archive of Aestra.">
+<title>A.T.L.A.S. · The Living Book of Aestra</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700&family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600&family=IM+Fell+English:ital@0;1&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="ambient-stars" aria-hidden="true"></div>
+<div class="ambient-vignette" aria-hidden="true"></div>
+
+<section id="closedScene" class="closed-scene" aria-label="A.T.L.A.S. closed book">
+  <div class="intro-overline">AN ARTEFACT OF THE AGE OF FADING LIGHT</div>
+  <div id="coverBook" class="closed-book">
+    <!-- Stationary, thick right-hand half of the volume. This stays put as the cover turns. -->
+    <div class="book-block" aria-hidden="true">
+      <div class="book-page-edges"></div>
+      <div class="book-under-spread">
+        <div class="under-page">
+          <div class="opening-page-rose">✧</div>
+          <div class="opening-page-rule">✦ ───── ✦ ───── ✦</div>
+          <div class="opening-page-heading">The Living Archive</div>
+          <p>Let no tale be lost to the fading light.</p>
+          <div class="opening-page-rule bottom">✧</div>
+        </div>
+      </div>
+    </div>
+    <!-- The cover is one physical two-sided slab: lettering, artwork and lock turn together. -->
+    <div class="front-cover" id="frontCover">
+      <div class="cover-face cover-outer">
+        <div class="cover-art" aria-hidden="true"></div>
+        <div class="cover-lettering" aria-hidden="true"><span>A.T.L.A.S.</span><small>AUTONOMOUS TRAVELLER'S<br>LOG &amp; ARCHIVE SYSTEM</small></div>
+        <button id="unlockBtn" class="keyhole-button" aria-label="Unlock A.T.L.A.S. and open the book" title="Unlock A.T.L.A.S."><span class="keyhole-halo" aria-hidden="true"></span></button>
+      </div>
+      <div class="cover-face cover-inner" aria-hidden="true">
+        <div class="inside-ornament">✧</div>
+        <div class="inside-filigree">THE TRAVELLER'S COMPANION</div>
+        <div class="inside-compass">✥</div>
+        <p>“To wander is to discover.<br>To remember is to preserve.”</p>
+        <div class="inside-ornament foot">❧</div>
+      </div>
+      <div class="cover-edge" aria-hidden="true"></div>
+    </div>
+  </div>
+  <p class="cover-instruction" id="coverInstruction">✧ &nbsp; TOUCH THE GLOWING KEYHOLE &nbsp; ✧</p>
+  <p class="cover-subtitle">The world remembers what its travellers write.</p>
+</section>
+
+<section id="openScene" class="open-scene" aria-hidden="true" aria-label="A.T.L.A.S. open book">
+  <header class="book-toolbar">
+    <div class="tool-left"><button class="toolbar-button" id="closeBook" title="Close the book">✕ <span>Close book</span></button><span class="tool-separator">✦</span><span class="small-brand">A.T.L.A.S.</span></div>
+    <div class="tool-right">
+      <button class="toolbar-button" id="contentsBtn" title="Browse all entries">☷ <span>Contents</span></button>
+      <label class="toolbar-search">⌕ <input id="searchInput" placeholder="Search the pages" aria-label="Search archive pages"></label>
+      <button class="toolbar-button reveal-open-button" id="revealToggle" type="button" aria-pressed="false" title="Reveal invisible ink with the magic lens">◉ <span>Reveal ink</span></button>
+      <button class="toolbar-button ink-open-button" id="inkToggle" type="button" aria-pressed="false" title="Draw, sketch and paint magical ink onto a page">✦ <span>Draw in book</span></button>
+      <button class="toolbar-button" id="settingsBtn" title="Accounts, invitations and backups">⚙ <span>Archive</span></button>
+      <button class="add-page-button" id="newBtn" title="Write a new page">＋ <span>Write a page</span></button>
+    </div>
+  </header>
+
+  <section class="ink-palette" id="inkPalette" aria-label="Ink and brush tools" hidden>
+    <div class="ink-palette-top"><span class="ink-palette-title">✦ &nbsp; The Inkwell</span><span id="inkPageLabel" class="ink-current-page">Choose an entry page</span><button type="button" id="inkDone" class="ink-done">✓ Done drawing</button></div>
+    <div class="ink-palette-body">
+      <div class="ink-pickers"><label class="ink-color-label" for="inkColor">Ink colour <input id="inkColor" type="color" value="#476d9d" title="Choose ink colour"></label>
+      <div class="ink-presets" aria-label="Quick colours"><button type="button" data-colour="#42291f" style="--swatch:#42291f" aria-label="Brown ink"></button><button type="button" data-colour="#317d86" style="--swatch:#317d86" aria-label="Turquoise ink"></button><button type="button" data-colour="#9b454c" style="--swatch:#9b454c" aria-label="Crimson ink"></button><button type="button" data-colour="#9c7730" style="--swatch:#9c7730" aria-label="Gold ink"></button><button type="button" data-colour="#9958c5" style="--swatch:#9958c5" aria-label="Violet ink"></button><button type="button" data-colour="#e6d9b9" style="--swatch:#e6d9b9" aria-label="Ivory ink"></button></div>
+      <label class="ink-size-label" for="inkSize">Size <input id="inkSize" type="range" min="1" max="38" value="7" step="1"><output id="inkSizeValue" for="inkSize">7 px</output></label>
+      <div class="ink-brush-types" role="group" aria-label="Brush shape"><span>Tip</span><button type="button" data-brush="fine" aria-pressed="false">Fine</button><button type="button" data-brush="round" aria-pressed="true" class="selected">Round</button><button type="button" data-brush="chisel" aria-pressed="false">Broad nib</button><button type="button" data-brush="spray" aria-pressed="false">Spray</button></div></div>
+      <div class="ink-types" role="group" aria-label="Magical ink effects">
+        <button type="button" data-ink="quill" class="ink-type selected" aria-pressed="true"><span class="ink-type-icon">✒</span> Quill</button>
+        <button type="button" data-ink="glow" class="ink-type" aria-pressed="false"><span class="ink-type-icon glow-icon">✧</span> Glow</button>
+        <button type="button" data-ink="stardust" class="ink-type" aria-pressed="false"><span class="ink-type-icon star-icon">✦</span> Stardust</button>
+        <button type="button" data-ink="ember" class="ink-type" aria-pressed="false"><span class="ink-type-icon ember-icon">❂</span> Ember</button>
+        <button type="button" data-ink="spectral" class="ink-type" aria-pressed="false"><span class="ink-type-icon spectral-icon">☾</span> Spectral</button>
+        <button type="button" data-ink="prismatic" class="ink-type" aria-pressed="false"><span class="ink-type-icon prism-icon">❖</span> Prismatic</button>
+        <button type="button" data-ink="invisible" class="ink-type" aria-pressed="false" title="Inscribe hidden words, visible only under a magical lens"><span class="ink-type-icon invisible-icon">◉</span> Invisible</button>
+        <button type="button" data-ink="eraser" class="ink-type" aria-pressed="false"><span class="ink-type-icon">⌫</span> Eraser</button>
+      </div>
+      <div class="ink-actions"><button type="button" id="inkUndo" title="Undo last stroke on chosen page">↶ Undo</button><button type="button" id="inkClear" title="Erase all drawings on chosen page">⌦ Clear page</button><span id="inkSaveStatus" class="ink-save-status" role="status">Sketch directly on a page to begin.</span></div>
+    </div>
+  </section>
+
+  <section id="revealPalette" class="reveal-palette" aria-label="Magical lens controls" hidden>
+    <div class="reveal-heading"><span class="lens-icon" aria-hidden="true">◉</span><div><strong>LENS OF REVELATION</strong><small>Move the light over a parchment page to expose invisible ink.</small></div></div>
+    <label class="reveal-size" for="revealSize">Lens size <input id="revealSize" type="range" min="65" max="260" value="138" step="1"><output id="revealSizeValue" for="revealSize">138 px</output></label>
+    <button id="revealFull" type="button" class="reveal-action" aria-pressed="false">✧ Illuminate whole page</button>
+    <button id="revealClose" type="button" class="reveal-action reveal-done">✕ Close lens</button>
+  </section>
+
+  <div class="book-world">
+    <div class="book-ornament ornament-left" aria-hidden="true">✦</div>
+    <div class="book-object" id="bookObject">
+      <div class="stacked-pages" aria-hidden="true"></div>
+      <div class="book-shell">
+        <div id="bookSpread" class="book-spread">
+          <article id="leftPage" class="paper-page left-paper"></article>
+          <div class="book-gutter" aria-hidden="true"></div>
+          <article id="rightPage" class="paper-page right-paper"></article>
+          <div id="turnLeaf" class="turn-leaf" aria-hidden="true"></div>
+        </div>
+      </div>
+      <div class="leather-corner c-tl" aria-hidden="true">✥</div><div class="leather-corner c-tr" aria-hidden="true">✥</div><div class="leather-corner c-bl" aria-hidden="true">✥</div><div class="leather-corner c-br" aria-hidden="true">✥</div>
+    </div>
+    <div class="book-ornament ornament-right" aria-hidden="true">✦</div>
+  </div>
+
+  <nav class="page-controls" aria-label="Turn the pages">
+    <button id="prevPage" class="page-arrow" title="Previous page" aria-label="Previous page">❮ <span>Previous</span></button>
+    <div class="page-indicator"><span class="page-indicator-line">✧ ───── ✧</span><span id="pageInfo">THE BEGINNING</span><span class="page-indicator-line">✧ ───── ✧</span></div>
+    <button id="nextPage" class="page-arrow" title="Next page" aria-label="Next page"><span>Next</span> ❯</button>
+  </nav>
+  <div class="atlas-whisper" id="whisper" aria-live="polite">“My pages are yours to fill, traveller.”</div>
+  <div class="book-footnote"><span id="connectionStatus">LOCAL ARCHIVE · THIS DEVICE</span><span id="liveStatus" aria-live="polite">LOCAL</span><span>USE ← → TO TURN PAGES</span></div>
+</section>
+
+<dialog id="editorDialog" class="manuscript-dialog">
+  <form id="editorForm" class="parchment-dialog">
+    <div class="dialog-heading"><div><div class="dialog-eyebrow">A NEW LEAF OF MEMORY</div><h2 id="editorHeading">Write upon a page</h2></div><button type="button" class="x-button" data-close="editorDialog" aria-label="Close editor">×</button></div>
+    <label class="field">TITLE OF THE PAGE<input name="title" maxlength="140" required placeholder="What has been discovered?"></label>
+    <div class="field-grid"><label class="field">CHAPTER<select name="section" id="editorSection"></select></label><label class="field">WHO MAY READ IT?<select name="visibility" id="visibilitySelect"><option value="party">The whole party</option><option value="gm">GM only — text, drawings and images</option></select></label></div>
+    <label class="field">WORDS TO PRESERVE<textarea name="body" rows="8" placeholder="Write your discoveries, rumours, observations, questions..."></textarea></label>
+    <label class="upload-field">✧ &nbsp; Place an illustration, map or photograph upon this page<input id="imageInput" type="file" accept="image/png,image/jpeg,image/webp,image/gif" hidden></label>
+    <div id="imagePreview" class="image-preview"></div>
+    <div class="dialog-actions"><button type="button" id="deleteBtn" class="danger-action" hidden>Delete page</button><span class="flex-fill"></span><button type="button" class="muted-action" data-close="editorDialog">Cancel</button><button type="submit" class="gold-action" id="saveBtn">✧ &nbsp; Inscribe in A.T.L.A.S.</button></div>
+    <p id="editorMsg" class="form-message" role="status"></p>
+  </form>
+</dialog>
+
+<dialog id="contentsDialog" class="manuscript-dialog contents-dialog">
+  <div class="parchment-dialog"><div class="dialog-heading"><div><div class="dialog-eyebrow">A GUIDE TO THE INSCRIBED</div><h2>Table of contents</h2></div><button type="button" class="x-button" data-close="contentsDialog" aria-label="Close contents">×</button></div>
+    <p class="contents-intro">Every fragment of Aestra's history, as written by its travellers.</p><div id="contentsList" class="contents-list"></div>
+    <div class="dialog-actions"><button type="button" id="newChapterBtn" class="muted-action">＋ New chapter</button><span class="flex-fill"></span><button type="button" class="gold-action" data-close="contentsDialog">Return to the book</button></div>
+  </div>
+</dialog>
+
+<dialog id="settingsDialog" class="manuscript-dialog settings-dialog">
+  <div class="parchment-dialog"><div class="dialog-heading"><div><div class="dialog-eyebrow">THE ARCHIVE'S INNER WORKINGS</div><h2>Keeper's desk</h2></div><button type="button" class="x-button" data-close="settingsDialog" aria-label="Close settings">×</button></div>
+    <p class="settings-desc">A.T.L.A.S. may be read privately on this device, or connected to one shared archive for your whole party. In shared mode, every traveller signs into the same hosted website.</p>
+    <div class="utility-row"><button class="muted-action" type="button" id="exportBtn">⇩ Export backup</button><label class="muted-action upload-inline">⇧ Import local backup<input id="importFile" type="file" accept="application/json" hidden></label><label class="muted-action upload-inline" id="cloudImportLabel" hidden>☁ Publish a backup to shared archive<input id="cloudImportFile" type="file" accept="application/json" hidden></label></div>
+    <div class="separator-title">CONNECT THE SHARED BOOK</div>
+    <label class="field">SUPABASE PROJECT URL<input id="projectUrl" placeholder="https://your-project.supabase.co" autocomplete="off"></label>
+    <label class="field">PUBLIC PUBLISHABLE KEY<input id="publishableKey" placeholder="sb_publishable_..." autocomplete="off"></label>
+    <button id="connectBtn" class="muted-action" type="button">Save connection</button>
+    <div id="authBox" class="auth-box" hidden>
+      <p id="userInfo" class="settings-desc"></p>
+      <div id="loginFields"><label class="field">EMAIL<input id="loginEmail" type="email" autocomplete="email"></label><label class="field">PASSWORD<input id="loginPassword" type="password" autocomplete="current-password"></label><div class="utility-row"><button id="signInBtn" type="button" class="gold-action">Sign in</button><button id="signUpBtn" type="button" class="muted-action">Create account</button></div></div>
+      <button id="signOutBtn" type="button" class="muted-action" hidden>Sign out</button>
+      <div id="joinBox" class="join-box" hidden><div class="separator-title">ASK TO JOIN THE PARTY'S BOOK</div><p>Choose the name to show beside your entries. The GM will approve your access.</p><label class="field">YOUR TRAVELLER NAME<input id="joinName" maxlength="60" placeholder="e.g. Iris / Wiktoria"></label><button type="button" id="requestJoin" class="gold-action">Request access</button><p id="joinStatus" class="form-message"></p></div>
+      <div id="keeperBox" class="keeper-box" hidden><div class="separator-title">THE KEEPER'S APPROVAL DESK</div><p>Approve only people you recognise. New players cannot read pages until approved.</p><div id="requestsList"></div><div class="separator-title">APPROVED TRAVELLERS</div><div id="membersList"></div></div>
+    </div>
+    <p class="settings-warning">GM-only pages and image files are private to GMs in shared mode. Invisible ink is a puzzle effect, not access control. Edits are recorded in page history.</p><p id="settingsMsg" class="form-message" role="status"></p>
+  </div>
+</dialog>
+<dialog id="historyDialog" class="manuscript-dialog history-dialog"><div class="parchment-dialog"><div class="dialog-heading"><div><div class="dialog-eyebrow">THE CHRONICLE OF CHANGES</div><h2 id="historyTitle">Page history</h2></div><button type="button" class="x-button" data-close="historyDialog" aria-label="Close history">×</button></div><p class="contents-intro">Earlier versions are preserved when a page changes. The GM and party can restore a visible page.</p><div id="historyList" class="history-list"></div><p id="historyMsg" class="form-message" role="status"></p><div class="dialog-actions"><button type="button" class="muted-action" data-close="historyDialog">Return to book</button></div></div></dialog>
+<script src="app.js" defer></script>
+<script src="ink.js" defer></script>
+</body>
+</html>
