@@ -1,46 +1,51 @@
-# A.T.L.A.S. — Ready to Publish (Version 7)
+# A.T.L.A.S. — The Living Book of Aestra
 
-This is the full Aestra interactive ancient book, with the Supabase **public connection values already configured**. The Supabase database is already installed in the existing Aestra Character Tracker Supabase project, so **do not rerun** the original setup SQL.
+Live site: https://sladeykins-glitch.github.io/aestra-atlas/
 
-## Create the GitHub Pages site
+A shared fantasy campaign archive for the world of Aestra, built as an interactive book. Hosted on GitHub Pages and connected to Supabase Auth, Database, Realtime and private Storage.
 
-1. Sign into GitHub as **sladeykins-glitch** at https://github.com/new.
-2. Name the new repository **aestra-atlas**, select **Public**, and create it. (Do not tick 'Add a README' if you want to upload these files into an empty repository.)
-3. Open the new repository, select **Add file → Upload files**. Drag the actual files and `assets` directory from this extracted ZIP into GitHub; **do not upload the ZIP file itself**. Then click **Commit changes**.
-4. Go to **Settings → Pages**, choose **Deploy from a branch**, select **main** and **/(root)**, and click **Save**.
-5. Open **https://sladeykins-glitch.github.io/aestra-atlas/** after GitHub reports the site has been published.
+## Version 8.1 — Adventurer's Scrapbook
 
-## Supabase Authentication (one-time dashboard setting)
+**Two separate page types are available:**
 
-Your project is: https://supabase.com/dashboard/project/pbsfiwzwdseslvnprcph
+- **Classic Page** — the original book page with its existing text editor, illustration, ink, image zoom, scrolling and page-turn mechanics. The classic editor and layouts have not been redesigned.
+- **Scrapbook Page** — click **✦ Scrapbook** in the top toolbar to create a freeform page. Give it a title and chapter, then add movable text boxes and illustrations. Select an item and drag to reposition it, or drag the turquoise corner to resize. Edit text in the selected item's inspector. Save to publish the layout to approved travellers.
 
-In **Authentication → URL Configuration**, set:
+Scrapbook pages support multiple private illustrations, GM-only visibility, revision history, mobile layout and live multi-user read access. **Do not assume two people can edit the same page simultaneously without a conflict**: the revision check protects the most recent saved layout.
 
-- **Leave the existing Site URL unchanged.** This Supabase project also hosts your Aestra Character Tracker, and replacing its site URL could affect that app.
-- Under **Redirect URLs**, **add** this URL without deleting the others: `https://sladeykins-glitch.github.io/aestra-atlas/**`
+Current limits: 32 elements / 12 pictures per scrapbook; image uploads must be PNG, JPG, WebP or GIF, no more than 5 MB each. Layouts use a portrait canvas. The decorative pinned-paper styles and advanced collaborative co-editing remain later enhancements.
 
-The deployed A.T.L.A.S. version uses `emailRedirectTo` for sign-up confirmation emails, so it does not depend on changing the shared project's default Site URL.
+### Storage / schema
 
-In **Authentication → Providers → Email**, make sure email/password login is enabled. Keep email confirmation enabled where possible.
+The existing `public.atlas_entries` table has additive columns `page_kind` (default `classic`) and `scrapbook_layout` (default `[]`), preserving old entries. The audit trigger also copies these fields into `atlas_entry_revisions`. Scrapbook images are uploaded to the existing private `atlas-images` bucket; a dedicated SELECT policy allows authorized readers to obtain signed links for images referenced by visible scrapbook pages.
 
-## Keeper login
+`scrapbook.js` contains the separate layout editor. The existing Classic Page entry markup and editing logic remain in `app.js`.
 
-1. Open the published site and click the keyhole to open the book.
-2. Open **Archive**. Because the public project URL and publishable key are already configured, the book should connect automatically.
-3. Sign in with the same Supabase Authentication user whose UID has role `gm` in the `atlas_members` table.
-4. Check that **Keeper's approval desk** appears.
+## Keeper and party accounts
 
-If you created your account through the Supabase Authentication dashboard instead of the website, use the corresponding email/password there.
+1. Open A.T.L.A.S. and click the glowing keyhole.
+2. Under **⚙ Archive**, sign in with your Supabase account.
+3. Players use **Request access**. The Keeper approves them under **Keeper's Approval Desk**.
+4. Approved players can read, write and collaborate on shared party pages. Only the Keeper can read GM-only pages.
 
-## Players
+Supabase project: https://supabase.com/dashboard/project/pbsfiwzwdseslvnprcph
 
-Share the public website URL. Each player signs up and requests access using **Archive → Request access**. As Keeper, approve their names in **Archive → Keeper's approval desk**. Don't share your own password.
+Leave the Supabase Auth Site URL unchanged because the project is shared with another app. The A.T.L.A.S. URL should be an allowed Auth redirect under **Authentication → URL Configuration**:
 
-## Notes
+`https://sladeykins-glitch.github.io/aestra-atlas/**`
 
-- This is Version 7 (shared archive). Version 8 (freeform scrapbook) is planned next. No talking-AI character or world-map feature is included.
-- GitHub Pages files are public. Do not put a service-role secret, SQL credentials, or private GM notes in any file.
-- The publishable key included in `app.js` is deliberately public; Supabase Row Level Security and authenticated accounts protect actual data.
-- The book's example entries are only local starter content, not preloaded into the shared database.
-- Publish a backup using **Archive** to bring across local pages.
-- This package prepares hosting but does not itself create the GitHub repository or change the Supabase Auth dashboard settings.
+## Site files
+
+- `index.html` — book structure and dialogs
+- `styles.css` — parchment and book visual design
+- `app.js` — classic pages, auth, shared archive and page turning
+- `ink.js` — handwritten magical ink
+- `scrapbook.js` — V8 scrapbook page editor and rendering
+- `assets/` — original cover and parchment images
+
+All website files are public, so **never commit Supabase service-role keys, database passwords, or secret campaign content**. The frontend uses a public publishable key; actual data access is enforced by Supabase RLS.
+
+### Deployment
+
+Changes to the GitHub `main` branch deploy via GitHub Pages. The default publish folder is the repository root.
+
