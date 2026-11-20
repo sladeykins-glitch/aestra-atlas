@@ -32,7 +32,7 @@ let imagePreviewUrl=null;
 let members=[], joinRequests=[], liveConnected=false, liveChannel=null, pollTimer=null, remoteRefreshTimer=null;
 let refreshInFlight=false, deferredRefresh=false, saveInProgress=false, activeHistoryId=null, pendingAccessTimer=null;
 const travellerName = id => members.find(m=>m.user_id===id)?.display_name || (id===user?.id?user.email?.split('@')[0]:null) || 'A traveller';
-function isEditingNow(){return animating||saveInProgress||Boolean(document.querySelector('#editorDialog[open]'))||Boolean(window.ATLASInk?.isEnabled());}
+function isEditingNow(){return animating||saveInProgress||Boolean(document.querySelector('#editorDialog[open]'))||Boolean(document.querySelector('#scrapbookDialog[open]'))||Boolean(window.ATLASInk?.isEnabled());}
 
 const isMobile=()=>window.matchMedia('(max-width:760px)').matches;
 const escapeHtml=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -57,7 +57,7 @@ function entryPage(e,index){
  return `<div class="page-inner"><div class="page-topline">A.T.L.A.S. • ${escapeHtml(sec.name)}</div><div class="page-scroll"><div class="page-content"><div class="page-category">${escapeHtml(sec.icon)} &nbsp; ${escapeHtml(sec.name)}</div><h2 class="page-title">${escapeHtml(e.title)}</h2>${src?`<img class="page-art" role="button" tabindex="0" title="Click to enlarge illustration" aria-label="Enlarge illustration for ${escapeHtml(e.title)}" alt="Illustration for ${escapeHtml(e.title)}" src="${escapeHtml(src)}">`:`<div class="page-sigil" aria-hidden="true">${escapeHtml(sec.icon)}</div>`}<div class="page-text">${escapeHtml(readableBody||'A blank page awaiting an account from the road...')}</div>${isRemote()?`<div class="page-author">Written by ${escapeHtml(travellerName(e.author_id))} · revision ${Number(e.revision)||1}</div>`:''}${canEdit()?`<button type="button" class="page-edit" data-edit-entry="${escapeHtml(e.id)}">✎ &nbsp; Edit this page</button>`:''}${isRemote()?`<button type="button" class="page-edit page-history" data-history-entry="${escapeHtml(e.id)}">◈ &nbsp; History</button>`:''}</div></div>${pageFooter(e.visibility==='gm'?'GM · SEALED':'A MEMORY RECORDED',index)}</div>`
 }
 function emptyPage(index){return `<div class="page-inner"><div class="page-topline">THE UNWRITTEN</div><div class="blank-page"><div class="blank-glyph">✧</div><p>The ink has yet to find this page.</p>${canEdit()?`<button class="blank-add" data-write-entry="true">✎ &nbsp; Write a discovery</button>`:''}</div>${pageFooter('THE NEXT JOURNEY',index)}</div>`}
-function pageMarkup(p,index){if(!p)return emptyPage(index);if(p.kind==='front')return frontispiece(index);if(p.kind==='contents')return contentsPage(index);return entryPage(p.entry,index)}
+function pageMarkup(p,index){if(!p)return emptyPage(index);if(p.kind==='front')return frontispiece(index);if(p.kind==='contents')return contentsPage(index);return p.entry.page_kind==='scrapbook'&&window.ATLASScrapbook?window.ATLASScrapbook.page(p.entry,index):entryPage(p.entry,index)}
 // Keep unchanged page nodes, image elements and ink canvases in place during live updates.
 function renderPageIfChanged(article,page,index){
  const markup=pageMarkup(page,index);
@@ -357,6 +357,8 @@ function archiveEntrySignature(entry){
  const persisted={...entry};
  delete persisted._imageUrl;
  delete persisted._imageUrlExpiresAt;
+ delete persisted._scrapImages;
+ delete persisted._scrapImagesExpiresAt;
  return JSON.stringify(persisted);
 }
 async function fetchRemote(force=false){
@@ -372,20 +374,35 @@ async function fetchRemote(force=false){
   const results=data||[],oldById=new Map(entries.map(e=>[e.id,e]));
   const now=Date.now();
   await Promise.all(results.map(async e=>{
-   if(!e.image_path)return;
    const old=oldById.get(e.id);
-   if(old?.image_path===e.image_path&&old._imageUrl&&old._imageUrlExpiresAt>now+300000){
-    e._imageUrl=old._imageUrl;
-    e._imageUrlExpiresAt=old._imageUrlExpiresAt;
-   }else{
-    const {data:link}=await supabase.storage.from('atlas-images').createSignedUrl(e.image_path,3600);
-    e._imageUrl=link?.signedUrl||null;
-    e._imageUrlExpiresAt=e._imageUrl?Date.now()+3600000:0;
+   if(e.image_path){
+    if(old?.image_path===e.image_path&&old._imageUrl&&old._imageUrlExpiresAt>now+300000){
+     e._imageUrl=old._imageUrl;
+     e._imageUrlExpiresAt=old._imageUrlExpiresAt;
+    }else{
+     const {data:link}=await supabase.storage.from('atlas-images').createSignedUrl(e.image_path,3600);
+     e._imageUrl=link?.signedUrl||null;
+     e._imageUrlExpiresAt=e._imageUrl?Date.now()+3600000:0;
+    }
+   }
+   // The existing private image bucket also holds scrapbook illustrations.
+   if(e.page_kind==='scrapbook'&&Array.isArray(e.scrapbook_layout)){
+    const paths=[...new Set(e.scrapbook_layout.filter(i=>i?.type==='image'&&typeof i.path==='string').map(i=>i.path))].slice(0,12);
+    e._scrapImages={};
+    for(const path of paths){
+     if(old?._scrapImages?.[path]&&old._scrapImagesExpiresAt>now+300000){
+      e._scrapImages[path]=old._scrapImages[path];
+     }else{
+      const {data:link}=await supabase.storage.from('atlas-images').createSignedUrl(path,3600);
+      if(link?.signedUrl)e._scrapImages[path]=link.signedUrl;
+     }
+    }
+    e._scrapImagesExpiresAt=Date.now()+3600000;
    }
   }));
   const changed=results.length!==entries.length||results.some((next,i)=>{
    const old=entries[i];
-   return !old||archiveEntrySignature(old)!==archiveEntrySignature(next)||old._imageUrl!==next._imageUrl;
+   return !old||archiveEntrySignature(old)!==archiveEntrySignature(next)||old._imageUrl!==next._imageUrl||JSON.stringify(old._scrapImages||{})!==JSON.stringify(next._scrapImages||{});
   });
   if(!changed)return; // Nothing changed: leave image elements, canvas and scroll positions untouched.
   if(!force&&isEditingNow()){deferredRefresh=true;return}
@@ -410,7 +427,7 @@ async function openHistory(id){
  activeHistoryId=id;$('#historyTitle').textContent=`History · ${entry.title}`;
  $('#historyList').innerHTML='<p>Reading the chronicles…</p>';$('#historyMsg').textContent='';$('#historyDialog').showModal();
  try{
-  const {data,error}=await supabase.from('atlas_entry_revisions').select('id,revision,title,body,section,visibility,image_path,ink_strokes,author_id,saved_at,replaced_by').eq('entry_id',id).order('revision',{ascending:false}).limit(30);
+  const {data,error}=await supabase.from('atlas_entry_revisions').select('id,revision,title,body,section,visibility,image_path,ink_strokes,author_id,saved_at,replaced_by,page_kind,scrapbook_layout').eq('entry_id',id).order('revision',{ascending:false}).limit(30);
   if(error)throw error;window.atlasHistory=(data||[]);
   $('#historyList').innerHTML=(data||[]).length?data.map(r=>`<div class="history-row"><span><strong>Revision ${Number(r.revision)}</strong><small>${escapeHtml(new Date(r.saved_at).toLocaleString('en-GB'))} · ${escapeHtml(travellerName(r.replaced_by))}</small><span class="history-preview">${escapeHtml(r.body.slice(0,220))}</span></span><button type="button" data-restore="${Number(r.revision)}">Restore this version</button></div>`).join(''):'<p>This page has not been changed yet.</p>';
  }catch(e){$('#historyList').textContent=e.message}
@@ -420,7 +437,7 @@ async function restoreRevision(rev){
  const old=window.atlasHistory?.find(r=>r.revision===rev),current=entries.find(e=>e.id===activeHistoryId);if(!old||!current)return;
  if(!confirm(`Restore revision ${rev} of “${current.title}”? A new revision will be created.`))return;
  try{
-  const payload={title:old.title,body:old.body,section:old.section,visibility:old.visibility,image_path:old.image_path,ink_strokes:old.ink_strokes};
+  const payload={title:old.title,body:old.body,section:old.section,visibility:old.visibility,image_path:old.image_path,ink_strokes:old.ink_strokes,page_kind:old.page_kind||'classic',scrapbook_layout:old.scrapbook_layout||[]};
   const {data,error}=await supabase.from('atlas_entries').update(payload).eq('id',current.id).eq('revision',current.revision).select().maybeSingle();
   if(error)throw error;if(!data)throw Error('Another traveller updated this page. Close history, refresh, and try again.');
   $('#historyDialog').close();await fetchRemote(true);showWhisper(`Revision ${rev} has been restored.`);
@@ -467,17 +484,17 @@ $('#editorDialog').addEventListener('close',()=>{if(deferredRefresh){deferredRef
 
 /* Page images and editor previews use the same viewer; any tap closes it. */
 document.addEventListener('click',event=>{
- const image=event.target.closest?.('.page-art, .image-preview img');
+ const image=event.target.closest?.('.page-art, .image-preview img, .scrapbook-readonly .scrap-img');
  if(image)showIllustration(image);
 });
 document.addEventListener('keydown',event=>{
- const image=event.target.closest?.('.page-art, .image-preview img');
+ const image=event.target.closest?.('.page-art, .image-preview img, .scrapbook-readonly .scrap-img');
  if(image&&(event.key==='Enter'||event.key===' ')){event.preventDefault();showIllustration(image)}
 });
 illustrationZoom.addEventListener('click',dismissIllustration);
 illustrationZoom.addEventListener('cancel',event=>{event.preventDefault();dismissIllustration()});
 
-$('#bookSpread').addEventListener('click',e=>{const history=e.target.closest('[data-history-entry]');if(history){openHistory(history.dataset.historyEntry);return}const edit=e.target.closest('[data-edit-entry]');if(edit){openEditor(edit.dataset.editEntry);return}if(e.target.closest('[data-write-entry]')){openEditor();return}if(e.target.closest('[data-show-contents]')){openContents();return}const chapterLink=e.target.closest('[data-jump-chapter]');if(chapterLink){const i=visibleEntries().findIndex(x=>x.section===chapterLink.dataset.jumpChapter);if(i>=0)jumpTo(2+i);else openContents()}});
+$('#bookSpread').addEventListener('click',e=>{const scrapbookEdit=e.target.closest('[data-edit-scrapbook]');if(scrapbookEdit){window.ATLASScrapbook?.open(scrapbookEdit.dataset.editScrapbook);return}const history=e.target.closest('[data-history-entry]');if(history){openHistory(history.dataset.historyEntry);return}const edit=e.target.closest('[data-edit-entry]');if(edit){openEditor(edit.dataset.editEntry);return}if(e.target.closest('[data-write-entry]')){openEditor();return}if(e.target.closest('[data-show-contents]')){openContents();return}const chapterLink=e.target.closest('[data-jump-chapter]');if(chapterLink){const i=visibleEntries().findIndex(x=>x.section===chapterLink.dataset.jumpChapter);if(i>=0)jumpTo(2+i);else openContents()}});
 $('#contentsList').addEventListener('click',e=>{const link=e.target.closest('[data-goto]');if(link){$('#contentsDialog').close();jumpTo(Number(link.dataset.goto))}});
 $('#imageInput').addEventListener('change',e=>{selectedFile=e.target.files?.[0]||null;if(imagePreviewUrl)URL.revokeObjectURL(imagePreviewUrl);imagePreviewUrl=selectedFile?URL.createObjectURL(selectedFile):null;$('#imagePreview').innerHTML=previewImage(imagePreviewUrl)});
 $('#requestJoin').addEventListener('click',requestAccess);
