@@ -221,3 +221,73 @@
 }
 
 @media(max-width:760px){.tool-right{flex-wrap:wrap;justify-content:center}.scrapbook-new-button span{display:none}.scrapbook-new-button{font-size:15px;padding:6px 10px}}
+
+
+/* ─── V8.2: handmade field-journal treatments ─── */
+.scrapbook-item{transform-origin:center center}
+.scrapbook-item::before,.scrapbook-item::after{pointer-events:none}
+.scrapbook-note.scrap-style-torn{
+ border:0;background:#f5e2b5;
+ clip-path:polygon(0 0,10% 1%,21% 0,33% 1.6%,48% 0,61% 1%,75% 0,89% 1.3%,100% 0,99% 17%,100% 33%,98.9% 54%,100% 75%,99% 100%,84% 99%,71% 100%,54% 98.7%,37% 100%,19% 99%,0 100%,1% 81%,0 62%,1% 45%,0 22%);
+ box-shadow:0 5px 14px #50331d55
+}
+.scrapbook-note.scrap-style-label{
+ background:#d8b683;color:#533725;
+ border:2px double #805934;
+ box-shadow:inset 0 0 0 4px #e4cc9b,0 2px 6px #53372555
+}
+.scrapbook-note.scrap-style-label .scrapbook-note-content{
+ font-family:'Cinzel',serif;font-size:clamp(9px,2.4cqw,16px);letter-spacing:.02em
+}
+.scrapbook-note.scrap-style-letter{
+ background:repeating-linear-gradient(transparent 0,transparent 27px,#baa07d55 28px,transparent 29px),#f6edcf;
+ border:1px solid #b39b77;box-shadow:2px 3px 8px #53382440;
+}
+.scrapbook-note.scrap-style-letter .scrapbook-note-content{font-family:'IM Fell English',serif}
+.scrapbook-picture.scrap-style-torn{
+ padding:3%;border:0;background:#f8edce;
+ clip-path:polygon(0 1%,11% 0,25% 1%,41% 0,59% 1%,77% 0,90% 1%,100% 0,99% 20%,100% 39%,99% 60%,100% 82%,99% 100%,81% 99%,64% 100%,50% 99%,27% 100%,10% 99%,0 100%,1% 78%,0 58%,1% 35%);
+ box-shadow:3px 5px 10px #4d302b55
+}
+.scrapbook-picture.scrap-style-pinned{padding:5%;border:2px solid #d0ae82;background:#f1d9b4;box-shadow:3px 6px 13px #47332675}
+.scrapbook-picture.scrap-style-pinned::before{
+ content:"";position:absolute;z-index:4;top:1%;left:50%;transform:translateX(-50%);
+ width:clamp(9px,3.5cqw,22px);height:clamp(9px,3.5cqw,22px);border-radius:50%;
+ background:radial-gradient(circle at 30% 25%,#ffe8a5 2%,#c99e4a 36%,#83602c 82%);
+ border:1px solid #775226;box-shadow:1px 2px 4px #3323197c
+}
+.scrapbook-picture.scrap-style-wax{padding:4%;border:2px solid #aa805d;background:#ead0ae;box-shadow:2px 4px 12px #51312155}
+.scrapbook-picture.scrap-style-wax::after{
+ content:"✥";position:absolute;z-index:4;right:1%;bottom:0;display:grid;place-items:center;
+ width:clamp(23px,7cqw,55px);height:clamp(23px,7cqw,55px);border-radius:45% 55% 49% 51%;
+ background:radial-gradient(circle at 38% 36%,#c66956,#842f30 70%,#69252b);
+ box-shadow:inset 1px 2px 3px #f6ac7577,1px 3px 5px #33231d66;
+ font:clamp(15px,3.8cqw,29px)/1 Georgia,serif;color:#ebc28d;text-shadow:0 1px 2px #4c1513
+}
+.scrapbook-picture.scrap-style-clipped{border:2px solid #aa885e;background:#efe0c4;padding:4%;box-shadow:3px 4px 12px #4d35255b}
+.scrapbook-picture.scrap-style-clipped::before{
+ content:"";position:absolute;z-index:5;top:-1%;left:12%;
+ width:clamp(10px,4.6cqw,32px);height:clamp(28px,11cqw,79px);
+ border:clamp(2px,.8cqw,5px) solid #8c9b9a;border-bottom:0;border-radius:55% 55% 0 0;
+ transform:rotate(-16deg);box-shadow:1px 0 2px #3333
+}
+.scrapbook-picture.scrap-style-clipped::after{
+ content:"";position:absolute;z-index:5;top:2%;left:14%;
+ width:clamp(4px,2cqw,16px);height:clamp(20px,8cqw,55px);
+ border:2px solid #b9c5bb;border-bottom:0;border-radius:60% 60% 0 0;
+ transform:rotate(-16deg)
+}
+.scrapbook-history-button:disabled{opacity:.35}
+.scrapbook-style-field,.scrapbook-rotation-field{margin:13px 0}
+.scrapbook-style-field select{font:500 17px/1.2 'Cormorant Garamond',Georgia,serif;min-height:40px}
+.scrapbook-rotation-row{display:flex;align-items:center;gap:9px}
+.scrapbook-rotation-row input[type=range]{flex:1;min-width:30px;accent-color:#337b78;cursor:ew-resize}
+.scrapbook-rotation-row output{min-width:37px;text-align:right;font:600 13px/1 'Cinzel',serif;color:#28615f}
+.scrapbook-layer-controls{display:flex;flex-wrap:wrap;gap:6px;margin:12px 0}
+.scrapbook-layer-controls button{flex:1 1 80px;font-size:10px;padding:7px 6px}
+.scrapbook-duplicate{width:100%;margin:0 0 7px}
+.scrapbook-inspector .danger-action{font-size:10px}
+@media(max-width:600px){
+ .scrapbook-history-button{padding:9px 8px;font-size:10px}
+ .scrapbook-layer-controls button{flex:1 1 100px}
+}
