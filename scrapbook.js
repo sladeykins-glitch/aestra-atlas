@@ -20,7 +20,7 @@
     if(type==='text')item.text=String(raw.text||'').slice(0,3000);
     else{
       if(typeof raw.path==='string'&&/^entries\/[0-9a-f-]{36}\/[0-9a-f-]{36}\.(png|jpg|jpeg|webp|gif)$/i.test(raw.path))item.path=raw.path;
-      if(typeof raw.src==='string'&&raw.src.startsWith('data:image/'))item.src=raw.src;
+      if(typeof raw.src==='string'&&/^data:image\/(png|jpeg|webp|gif);base64,/i.test(raw.src))item.src=raw.src;
     }
     return item;
   }
@@ -28,7 +28,7 @@
   const imageUrl=(entry,item)=>{
     const path=item.path;
     if(path&&entry._scrapImages?.[path])return entry._scrapImages[path];
-    if(item.src?.startsWith('data:image/'))return item.src;
+    if(/^data:image\/(png|jpeg|webp|gif);base64,/i.test(item.src||''))return item.src;
     return null;
   };
   function itemStyle(i){return 'left:'+(i.x/W*100)+'%;top:'+(i.y/H*100)+'%;width:'+(i.w/W*100)+'%;height:'+(i.h/H*100)+'%;';}
@@ -165,7 +165,7 @@
       const base={id:it.id,type:it.type,x:Math.round(it.x),y:Math.round(it.y),w:Math.round(it.w),h:Math.round(it.h)};
       if(it.type==='text')base.text=String(it.text||'').slice(0,3000);
       else if(it.path)base.path=it.path;
-      else if(!isRemote()&&it.src?.startsWith('data:image/'))base.src=it.src;
+      else if(!isRemote()&&/^data:image\/(png|jpeg|webp|gif);base64,/i.test(it.src||''))base.src=it.src;
       return base;
     });
   }
