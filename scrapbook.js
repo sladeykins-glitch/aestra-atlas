@@ -3,11 +3,41 @@
 (() => {
   'use strict';
   const W=1000,H=1400,MAX_ITEMS=32,MAX_IMAGES=12;
+  const STYLES={
+    text:[['plain','Simple parchment'],['torn','Torn parchment'],['label','Little field label'],['letter','Old letter paper']],
+    image:[['framed','Simple border'],['pinned','Brass pin'],['wax','Wax seal'],['clipped','Paper clip'],['torn','Torn edges']]
+  };
+  const defaultStyle=type=>type==='text'?'plain':'framed';
+  const validStyle=(type,style)=>STYLES[type].some(([value])=>value===style)?style:defaultStyle(type);
   const $=s=>document.querySelector(s);
   const esc=v=>escapeHtml(String(v??''));
   const clamp=(v,min,max)=>Math.max(min,Math.min(max,v));
   const num=(v,fallback)=>Number.isFinite(Number(v))?Number(v):fallback;
   let draft=null,selectedId=null,pointer=null,dirty=false,saving=false;
+  let undoStack=[],redoStack=[],textEditSession=false,rotateSession=false;
+  const snapshot=()=>draft?.items.map(item=>({...item}))||[];
+  const resetEditSessions=()=>{textEditSession=false;rotateSession=false;};
+  function syncHistoryControls(){
+    const undo=$('#scrapbookUndo'),redo=$('#scrapbookRedo');
+    if(undo)undo.disabled=saving||undoStack.length===0;
+    if(redo)redo.disabled=saving||redoStack.length===0;
+  }
+  function checkpoint(){
+    if(!draft||saving)return;
+    undoStack.push(snapshot());
+    if(undoStack.length>50)undoStack.shift();
+    redoStack=[];
+    syncHistoryControls();
+  }
+  function applyHistory(kind){
+    if(!draft||saving||pointer)return;
+    const source=kind==='undo'?undoStack:redoStack, target=kind==='undo'?redoStack:undoStack;
+    if(!source.length)return;
+    target.push(snapshot());
+    draft.items=source.pop().map(item=>({...item}));
+    if(!draft.items.some(item=>item.id===selectedId))selectedId=null;
+    resetEditSessions();markDirty();drawBoard();
+  }
   const ownedUrls=new Set();
 
   function safeItem(raw){
@@ -17,6 +47,8 @@
     const h=clamp(num(raw.h,type==='text'?190:300),type==='text'?100:90,H);
     const item={id:String(raw.id||crypto.randomUUID()),type,
       x:clamp(num(raw.x,70),0,W-w),y:clamp(num(raw.y,90),0,H-h),w,h};
+    item.style=validStyle(type,raw.style);
+    item.angle=clamp(num(raw.angle,0),-18,18);
     if(type==='text')item.text=String(raw.text||'').slice(0,3000);
     else{
       if(typeof raw.path==='string'&&/^entries\/[0-9a-f-]{36}\/[0-9a-f-]{36}\.(png|jpg|jpeg|webp|gif)$/i.test(raw.path))item.path=raw.path;
@@ -31,19 +63,24 @@
     if(/^data:image\/(png|jpeg|webp|gif);base64,/i.test(item.src||''))return item.src;
     return null;
   };
-  function itemStyle(i){return 'left:'+(i.x/W*100)+'%;top:'+(i.y/H*100)+'%;width:'+(i.w/W*100)+'%;height:'+(i.h/H*100)+'%;';}
-  function pageItem(entry,item){
-    if(item.type==='text')return '<div class="scrapbook-item scrapbook-note" style="'+itemStyle(item)+'">'+
+  function itemStyle(i,index=0,selected=false){
+    return 'left:'+(i.x/W*100)+'%;top:'+(i.y/H*100)+'%;width:'+(i.w/W*100)+'%;height:'+(i.h/H*100)+
+      '%;transform:rotate('+clamp(num(i.angle,0),-18,18)+'deg);z-index:'+(selected?99:index+1)+';';
+  }
+  function visualClass(item){return item.type==='text'?'scrapbook-note scrap-style-'+validStyle('text',item.style):
+    'scrapbook-picture scrap-style-'+validStyle('image',item.style);}
+  function pageItem(entry,item,index){
+    if(item.type==='text')return '<div class="scrapbook-item '+visualClass(item)+'" style="'+itemStyle(item,index)+'">'+
       '<div class="scrapbook-note-content">'+esc(item.text)+'</div></div>';
     const src=imageUrl(entry,item);
-    return '<div class="scrapbook-item scrapbook-picture" style="'+itemStyle(item)+'">'+
+    return '<div class="scrapbook-item '+visualClass(item)+'" style="'+itemStyle(item,index)+'">'+
       (src?'<img class="scrap-img" role="button" tabindex="0" title="Click to enlarge" alt="Scrapbook illustration" src="'+esc(src)+'">':
        '<div class="scrapbook-image-unavailable">✧ Illustration unavailable</div>')+'</div>';
   }
   function page(entry,index){
     const section=chapter(entry.section);
     const items=itemsFor(entry);
-    const content=items.length?items.map(it=>pageItem(entry,it)).join(''):'<p class="scrapbook-empty">An unwritten scrapbook, awaiting memories.</p>';
+    const content=items.length?items.map((it,i)=>pageItem(entry,it,i)).join(''):'<p class="scrapbook-empty">An unwritten scrapbook, awaiting memories.</p>';
     return '<div class="page-inner scrapbook-page"><div class="page-topline">A.T.L.A.S. • '+esc(section.name)+'</div>'+
       '<div class="page-scroll"><div class="page-content">'+
       '<div class="page-category">✦ &nbsp; THE ADVENTURER’S SCRAPBOOK</div>'+
@@ -54,15 +91,15 @@
       (isRemote()?'<button type="button" class="page-edit page-history" data-history-entry="'+esc(entry.id)+'">◈ &nbsp; History</button>':'')+
       '</div></div>'+pageFooter(entry.visibility==='gm'?'GM · SEALED':'AN ADVENTURE PRESERVED',index)+'</div>';
   }
-  function previewItem(item){
+  function previewItem(item,index){
     const selected=item.id===selectedId;
     const src=item.src||(item.path&&draft.originalImages?.[item.path])||'';
     const inner=item.type==='text'?
       '<div class="scrapbook-note-content">'+esc(item.text)+'</div>':
       (src?'<img class="scrapbook-edit-image" draggable="false" src="'+esc(src)+'" alt="Scrapbook artwork">':
        '<span class="scrapbook-image-unavailable">Illustration unavailable</span>');
-    return '<div class="scrapbook-design-item scrapbook-item '+(item.type==='text'?'scrapbook-note':'scrapbook-picture')+
-      (selected?' is-selected':'')+'" data-scrap-item="'+esc(item.id)+'" style="'+itemStyle(item)+'">'+inner+
+    return '<div class="scrapbook-design-item scrapbook-item '+visualClass(item)+
+      (selected?' is-selected':'')+'" data-scrap-item="'+esc(item.id)+'" style="'+itemStyle(item,index,selected)+'">'+inner+
       '<span class="scrapbook-drag-hint" aria-hidden="true">✥</span>'+
       (selected?'<span class="scrapbook-resize-handle" data-scrap-resize="true" title="Drag to resize" aria-hidden="true"></span>':'')+
       '</div>';
@@ -72,6 +109,7 @@
     if(!el||!draft)return;
     el.innerHTML=draft.items.length?draft.items.map(previewItem).join(''):'<span class="scrapbook-editor-empty">✧ Add a note or illustration to begin</span>';
     syncInspector();
+    syncHistoryControls();
   }
   function selected(){return draft?.items.find(i=>i.id===selectedId)||null}
   function syncInspector(){
@@ -81,16 +119,27 @@
     $('#scrapbookSelectedName').textContent=item?(item.type==='text'?'Handwritten note':'Illustration'):'';
     $('#scrapbookTextLabel').hidden=!item||item.type!=='text';
     if(item?.type==='text'&&document.activeElement!==$('#scrapbookText'))$('#scrapbookText').value=item.text;
-    $('#scrapbookRemove').disabled=!item;
+    $('#scrapbookRemove').disabled=!item||saving;
+    $('#scrapbookDuplicate').disabled=!item||saving;
+    $('#scrapbookToFront').disabled=!item||saving||draft.items.indexOf(item)===draft.items.length-1;
+    $('#scrapbookToBack').disabled=!item||saving||draft.items.indexOf(item)===0;
+    const styleOptions=$('#scrapbookStyle');
+    if(item){
+      styleOptions.innerHTML=STYLES[item.type].map(([key,name])=>'<option value="'+key+'">'+esc(name)+'</option>').join('');
+      styleOptions.value=validStyle(item.type,item.style);
+      $('#scrapbookRotation').value=String(clamp(num(item.angle,0),-18,18));
+      $('#scrapbookRotationValue').textContent=String(Math.round(num(item.angle,0)))+'°';
+    }
   }
   function markDirty(){dirty=true;$('#scrapbookStatus').textContent='Unsaved scrapbook changes';}
   function addItem(type,file){
     if(!draft||draft.items.length>=MAX_ITEMS){$('#scrapbookStatus').textContent='This scrapbook is full (32 pieces).';return;}
     if(type==='image'&&draft.items.filter(i=>i.type==='image').length>=MAX_IMAGES){$('#scrapbookStatus').textContent='Maximum 12 illustrations per scrapbook.';return;}
-    const item={id:crypto.randomUUID(),type,x:110+draft.items.length%4*40,y:130+draft.items.length%5*45,w:type==='text'?510:460,h:type==='text'?230:340};
+    checkpoint();
+    const item={id:crypto.randomUUID(),type,x:110+draft.items.length%4*40,y:130+draft.items.length%5*45,w:type==='text'?510:460,h:type==='text'?230:340,style:defaultStyle(type),angle:0};
     if(type==='text')item.text='Write your discovery here…';
     else if(file){item.src=URL.createObjectURL(file);item.file=file;ownedUrls.add(item.src);}
-    draft.items.push(item);selectedId=item.id;markDirty();drawBoard();
+    draft.items.push(item);selectedId=item.id;resetEditSessions();markDirty();drawBoard();
   }
   function open(id=null){
     if(!canEdit()){openSettings();return;}
@@ -101,7 +150,7 @@
     draft={id:entry?.id||null,revision:entry?.revision||null,originalImages:entry?{...(entry._scrapImages||{})}:{},
       title:entry?.title||'',section:entry?.section||'journal',
       visibility:entry?.visibility||'party',items:entry?itemsFor(entry):[]};
-    dirty=false;selectedId=null;pointer=null;
+    dirty=false;selectedId=null;pointer=null;undoStack=[];redoStack=[];resetEditSessions();
     const sections=chapters.filter(c=>c.id!=='all');
     $('#scrapbookSection').innerHTML=sections.map(c=>'<option value="'+esc(c.id)+'">'+esc(c.name)+'</option>').join('');
     $('#scrapbookTitle').value=draft.title;$('#scrapbookSection').value=draft.section;
@@ -122,18 +171,19 @@
   function cleanup(){
     $('#scrapbookDialog').close();
     for(const url of ownedUrls)URL.revokeObjectURL(url);
-    ownedUrls.clear();draft=null;selectedId=null;pointer=null;dirty=false;
+    ownedUrls.clear();draft=null;selectedId=null;pointer=null;dirty=false;undoStack=[];redoStack=[];resetEditSessions();
   }
   function onPointerDown(e){
     if(!draft||saving||e.button!==0)return;
     const elem=e.target.closest('[data-scrap-item]');
-    if(!elem){selectedId=null;drawBoard();return;}
+    if(!elem){selectedId=null;resetEditSessions();drawBoard();return;}
     const id=elem.dataset.scrapItem, item=draft.items.find(i=>i.id===id);
     if(!item)return;
     const resize=!!e.target.closest('[data-scrap-resize]');
     const rect=$('#scrapbookEditorStage').getBoundingClientRect();
+    if(selectedId!==id)resetEditSessions();
     selectedId=id;
-    pointer={id:e.pointerId,element:elem,resize,startX:e.clientX,startY:e.clientY,origin:{x:item.x,y:item.y,w:item.w,h:item.h},scaleX:W/rect.width,scaleY:H/rect.height};
+    pointer={id:e.pointerId,resize,changed:false,startX:e.clientX,startY:e.clientY,origin:{x:item.x,y:item.y,w:item.w,h:item.h},scaleX:W/rect.width,scaleY:H/rect.height};
     e.preventDefault();
     $('#scrapbookEditorStage').setPointerCapture(e.pointerId);
     elem.classList.add('is-selected');
@@ -144,6 +194,10 @@
     if(!pointer||pointer.id!==e.pointerId||!draft)return;
     const item=draft.items.find(i=>i.id===selectedId);if(!item)return;
     const dx=(e.clientX-pointer.startX)*pointer.scaleX,dy=(e.clientY-pointer.startY)*pointer.scaleY;
+    if(!pointer.changed){
+      if(Math.abs(e.clientX-pointer.startX)<2&&Math.abs(e.clientY-pointer.startY)<2)return;
+      checkpoint();pointer.changed=true;
+    }
     if(pointer.resize){
       item.w=clamp(pointer.origin.w+dx,item.type==='text'?180:100,W-item.x);
       item.h=clamp(pointer.origin.h+dy,item.type==='text'?100:90,H-item.y);
@@ -152,7 +206,7 @@
       item.y=clamp(pointer.origin.y+dy,0,H-item.h);
     }
     const elem=$('#scrapbookEditorStage').querySelector('[data-scrap-item="'+selectedId+'"]');
-    if(elem)elem.setAttribute('style',itemStyle(item));
+    if(elem)elem.setAttribute('style',itemStyle(item,draft.items.indexOf(item),true));
     markDirty();
   }
   function onPointerUp(e){
@@ -162,7 +216,7 @@
   }
   function layoutForSave(){
     return draft.items.map(it=>{
-      const base={id:it.id,type:it.type,x:Math.round(it.x),y:Math.round(it.y),w:Math.round(it.w),h:Math.round(it.h)};
+      const base={id:it.id,type:it.type,x:Math.round(it.x),y:Math.round(it.y),w:Math.round(it.w),h:Math.round(it.h),style:validStyle(it.type,it.style),angle:clamp(Math.round(num(it.angle,0)),-18,18)};
       if(it.type==='text')base.text=String(it.text||'').slice(0,3000);
       else if(it.path)base.path=it.path;
       else if(!isRemote()&&/^data:image\/(png|jpeg|webp|gif);base64,/i.test(it.src||''))base.src=it.src;
@@ -257,18 +311,68 @@
       }
       addItem('image',file);
     });
+    $('#scrapbookUndo').addEventListener('click',()=>applyHistory('undo'));
+    $('#scrapbookRedo').addEventListener('click',()=>applyHistory('redo'));
+    $('#scrapbookText').addEventListener('blur',()=>{textEditSession=false;});
+    $('#scrapbookStyle').addEventListener('change',e=>{
+      const item=selected();if(!item||saving)return;
+      const style=validStyle(item.type,e.target.value);
+      if(style===validStyle(item.type,item.style))return;
+      checkpoint();item.style=style;markDirty();drawBoard();
+    });
+    $('#scrapbookRotation').addEventListener('input',e=>{
+      const item=selected();if(!item||saving)return;
+      if(!rotateSession){checkpoint();rotateSession=true;}
+      item.angle=clamp(num(e.target.value,0),-18,18);
+      $('#scrapbookRotationValue').textContent=Math.round(item.angle)+'°';
+      const el=$('#scrapbookEditorStage').querySelector('[data-scrap-item="'+item.id+'"]');
+      if(el)el.setAttribute('style',itemStyle(item,draft.items.indexOf(item),true));
+      markDirty();
+    });
+    $('#scrapbookRotation').addEventListener('change',()=>{rotateSession=false;});
+    $('#scrapbookRotation').addEventListener('blur',()=>{rotateSession=false;});
+    function moveLayer(front){
+      if(!selected()||saving)return;
+      const index=draft.items.findIndex(item=>item.id===selectedId);
+      if(front&&index===draft.items.length-1||!front&&index===0)return;
+      checkpoint();
+      const [item]=draft.items.splice(index,1);
+      if(front)draft.items.push(item);else draft.items.unshift(item);
+      markDirty();drawBoard();
+    }
+    $('#scrapbookToFront').addEventListener('click',()=>moveLayer(true));
+    $('#scrapbookToBack').addEventListener('click',()=>moveLayer(false));
+    $('#scrapbookDuplicate').addEventListener('click',()=>{
+      const item=selected();if(!item||saving)return;
+      if(draft.items.length>=MAX_ITEMS){$('#scrapbookStatus').textContent='This scrapbook is full (32 pieces).';return;}
+      if(item.type==='image'&&draft.items.filter(i=>i.type==='image').length>=MAX_IMAGES){
+        $('#scrapbookStatus').textContent='Maximum 12 illustrations per scrapbook.';return;
+      }
+      checkpoint();
+      const copy={...item,id:crypto.randomUUID(),x:clamp(item.x+35,0,W-item.w),y:clamp(item.y+35,0,H-item.h)};
+      draft.items.push(copy);selectedId=copy.id;resetEditSessions();markDirty();drawBoard();
+    });
+    $('#scrapbookDialog').addEventListener('keydown',event=>{
+      if(!(event.ctrlKey||event.metaKey)||event.altKey)return;
+      if(['INPUT','TEXTAREA','SELECT'].includes(event.target.tagName))return;
+      const key=event.key.toLowerCase();
+      if(key==='z'){event.preventDefault();applyHistory(event.shiftKey?'redo':'undo');}
+      else if(key==='y'){event.preventDefault();applyHistory('redo');}
+    });
     $('#scrapbookText').addEventListener('input',e=>{
       const it=selected();if(!it||it.type!=='text')return;
+      if(!textEditSession){checkpoint();textEditSession=true;}
       it.text=e.target.value.slice(0,3000);
       const cell=$('#scrapbookEditorStage').querySelector('[data-scrap-item="'+it.id+'"] .scrapbook-note-content');
       if(cell)cell.textContent=it.text;
       markDirty();
     });
     $('#scrapbookRemove').addEventListener('click',()=>{
-      if(!selected())return;
-      const old=selected();draft.items=draft.items.filter(i=>i.id!==old.id);
-      if(old.src?.startsWith('blob:')){URL.revokeObjectURL(old.src);ownedUrls.delete(old.src);}
-      selectedId=null;markDirty();drawBoard();
+      if(!selected()||saving)return;
+      checkpoint();
+      draft.items=draft.items.filter(item=>item.id!==selectedId);
+      // Keep object URLs alive while undo might restore a removed illustration.
+      selectedId=null;resetEditSessions();markDirty();drawBoard();
     });
     $('#scrapbookStageBack').addEventListener('click',()=>{selectedId=null;drawBoard()});
     $('#scrapbookEditorStage').addEventListener('pointerdown',onPointerDown);
@@ -283,7 +387,7 @@
     $('#scrapbookDialog').addEventListener('cancel',e=>{e.preventDefault();close();});
     $('#scrapbookEditorStage').addEventListener('keydown',e=>{
       const it=selected();if(!it||!['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(e.key))return;
-      e.preventDefault();const amount=e.shiftKey?25:5;
+      e.preventDefault();checkpoint();const amount=e.shiftKey?25:5;
       if(e.key==='ArrowLeft')it.x=clamp(it.x-amount,0,W-it.w);
       if(e.key==='ArrowRight')it.x=clamp(it.x+amount,0,W-it.w);
       if(e.key==='ArrowUp')it.y=clamp(it.y-amount,0,H-it.h);
