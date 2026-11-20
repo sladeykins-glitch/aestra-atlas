@@ -61,7 +61,8 @@
       <button class="toolbar-button reveal-open-button" id="revealToggle" type="button" aria-pressed="false" title="Reveal invisible ink with the magic lens">◉ <span>Reveal ink</span></button>
       <button class="toolbar-button ink-open-button" id="inkToggle" type="button" aria-pressed="false" title="Draw, sketch and paint magical ink onto a page">✦ <span>Draw in book</span></button>
       <button class="toolbar-button" id="settingsBtn" title="Accounts, invitations and backups">⚙ <span>Archive</span></button>
-      <button class="add-page-button" id="newBtn" title="Write a new page">＋ <span>Write a page</span></button>
+      <button class="add-page-button" id="newBtn" title="Write a classic page">＋ <span>Write a page</span></button>
+      <button class="add-page-button scrapbook-new-button" id="scrapbookNewBtn" title="Create a freeform scrapbook page">✦ <span>Scrapbook</span></button>
     </div>
   </header>
 
@@ -159,11 +160,53 @@
 </dialog>
 <dialog id="historyDialog" class="manuscript-dialog history-dialog"><div class="parchment-dialog"><div class="dialog-heading"><div><div class="dialog-eyebrow">THE CHRONICLE OF CHANGES</div><h2 id="historyTitle">Page history</h2></div><button type="button" class="x-button" data-close="historyDialog" aria-label="Close history">×</button></div><p class="contents-intro">Earlier versions are preserved when a page changes. The GM and party can restore a visible page.</p><div id="historyList" class="history-list"></div><p id="historyMsg" class="form-message" role="status"></p><div class="dialog-actions"><button type="button" class="muted-action" data-close="historyDialog">Return to book</button></div></div></dialog>
 
+
+<!-- Version 8.1 Scrapbook: deliberately separate from the unchanged Classic page editor. -->
+<dialog id="scrapbookDialog" class="scrapbook-dialog" aria-label="Arrange your scrapbook page">
+  <div class="scrapbook-dialog-inner">
+    <div class="dialog-heading">
+      <div><div class="dialog-eyebrow">A.T.L.A.S. · THE ADVENTURER'S SCRAPBOOK</div><h2 id="scrapbookHeading">Create a scrapbook</h2></div>
+      <button type="button" class="x-button" id="scrapbookCancel" aria-label="Close scrapbook editor">×</button>
+    </div>
+    <div class="scrapbook-meta">
+      <label class="field">TITLE<input id="scrapbookTitle" maxlength="140" placeholder="A memory from the road" required></label>
+      <label class="field">CHAPTER<select id="scrapbookSection"></select></label>
+      <label class="field">WHO MAY READ?<select id="scrapbookVisibility"><option value="party">The whole party</option><option value="gm">Keeper only</option></select></label>
+    </div>
+    <div class="scrapbook-toolbar" aria-label="Scrapbook tools">
+      <button type="button" id="scrapbookAddText" class="gold-action">✎ Add text box</button>
+      <button type="button" id="scrapbookAddImage" class="gold-action">▣ Add illustration</button>
+      <input type="file" id="scrapbookImageInput" accept="image/png,image/jpeg,image/webp,image/gif" hidden>
+      <span class="scrapbook-toolbar-tip">Select an item, drag it to move, or pull its corner to resize.</span>
+    </div>
+    <div class="scrapbook-workspace">
+      <div class="scrapbook-stage-wrap">
+        <button type="button" id="scrapbookStageBack" class="scrapbook-deselect">Deselect item</button>
+        <div id="scrapbookEditorStage" class="scrapbook-stage scrapbook-editor-stage" tabindex="0" aria-label="Scrapbook layout canvas"></div>
+      </div>
+      <aside id="scrapbookInspector" class="scrapbook-inspector" hidden>
+        <h3 id="scrapbookSelectedName">Selected element</h3>
+        <label class="field" id="scrapbookTextLabel">TEXT ON THE PAGE
+          <textarea id="scrapbookText" rows="7" maxlength="3000" placeholder="Write something memorable..."></textarea>
+        </label>
+        <p>Drag anywhere on the piece to move it. Pull the turquoise corner to resize. On a keyboard, use arrow keys to nudge.</p>
+        <button type="button" class="danger-action" id="scrapbookRemove">Remove this piece</button>
+      </aside>
+    </div>
+    <div class="scrapbook-footer">
+      <button type="button" class="danger-action" id="scrapbookDeletePage" hidden>Delete scrapbook</button>
+      <span class="scrapbook-save-status" id="scrapbookStatus" role="status">Ready to arrange.</span>
+      <button type="button" class="gold-action" id="scrapbookSave">✧ Save scrapbook</button>
+    </div>
+  </div>
+</dialog>
+
 <!-- Full-screen illustration viewer. Its image animates from, and back to, the book page. -->
 <dialog id="illustrationZoom" class="illustration-zoom" aria-label="Expanded illustration; click anywhere or press Escape to return to the page">
   <img id="zoomedIllustration" class="zoomed-illustration" alt="">
   <p class="illustration-zoom-hint" aria-hidden="true">✧ &nbsp; TAP ANYWHERE TO RETURN TO THE PAGE &nbsp; ✧</p>
 </dialog>
+<script src="scrapbook.js" defer></script>
 <script src="app.js" defer></script>
 <script src="ink.js" defer></script>
 </body>
