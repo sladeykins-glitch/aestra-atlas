@@ -81,7 +81,8 @@
     canvas.className='ink-canvas';
     canvas.dataset.entryId=entry.id;
     canvas.setAttribute('aria-label',`Draw and annotate ${entry.title}`);
-    article.appendChild(canvas);
+    // Inside the scrolling content, so handwriting travels with the text and illustrations.
+    (article.querySelector('.page-content')||article).appendChild(canvas);
     canvases.set(entry.id,canvas);
     canvas.addEventListener('pointerenter',e=>{if(revealMode==='lens')revealAt(canvas,e);});
     canvas.addEventListener('pointerleave',()=>{if(revealMode==='lens' && !canvas.hasPointerCapture?.(active?.pointerId ?? -1)){revealPoint=null;paintAll();}});
@@ -224,13 +225,30 @@
     if(layer.width!==canvas.width||layer.height!==canvas.height){layer.width=canvas.width;layer.height=canvas.height;}
     return layer;
   }
+  // Older entries saved points against the fixed page. Project them onto the scrollable
+  // document's initial viewport so existing handwriting stays in roughly the same place.
+  // The conversion is for display only: stored strokes are never silently rewritten.
+  function positionedStroke(canvas,stroke) {
+    if(stroke.space==='content'||!Array.isArray(stroke.points))return stroke;
+    const paper=canvas.closest('.paper-page'),scroller=canvas.closest('.page-scroll');
+    if(!paper||!scroller)return stroke;
+    const pageRect=paper.getBoundingClientRect(),contentRect=canvas.getBoundingClientRect();
+    if(!contentRect.width||!contentRect.height)return stroke;
+    const initialTop=contentRect.top+scroller.scrollTop;
+    const offsetX=pageRect.left-contentRect.left;
+    const offsetY=pageRect.top-initialTop;
+    return {...stroke,points:stroke.points.map(p=>({
+      x:(Number(p.x)*pageRect.width+offsetX)/contentRect.width,
+      y:(Number(p.y)*pageRect.height+offsetY)/contentRect.height
+    }))};
+  }
   function paintCanvas(canvas,time=0) {
     const entry=entryById(canvas.dataset.entryId);if(!entry)return;
     const sized=getContext(canvas);if(!sized)return;
     const {ctx,w,h}=sized,strokes=inkFor(entry),limited=Math.min(strokes.length,MAX_STROKES);
     // Ordinary ink is always visible. Hidden ink is rendered on a wholly separate
     // layer, allowing the eraser to erase *both* types without exposing secrets.
-    for(let i=0;i<limited;i++)if(strokes[i].ink!=='invisible')paintStroke(ctx,strokes[i],w,h,time,i);
+    for(let i=0;i<limited;i++)if(strokes[i].ink!=='invisible')paintStroke(ctx,positionedStroke(canvas,strokes[i]),w,h,time,i);
     if(active?.entryId===entry.id && active.stroke.ink==='invisible' && enabled){
       // While writing, briefly show the fresh ink to its author. It dries invisible
       // on pointer release, so the player can see what they are drawing.
@@ -241,7 +259,7 @@
     const scale=canvas.width/w;
     lc.setTransform(1,0,0,1,0,0);lc.clearRect(0,0,layer.width,layer.height);
     lc.setTransform(scale,0,0,scale,0,0);
-    for(let i=0;i<limited;i++)if(strokes[i].ink==='invisible'||strokes[i].ink==='eraser')paintStroke(lc,strokes[i],w,h,time,i);
+    for(let i=0;i<limited;i++)if(strokes[i].ink==='invisible'||strokes[i].ink==='eraser')paintStroke(lc,positionedStroke(canvas,strokes[i]),w,h,time,i);
     if(revealMode==='all'){
       ctx.drawImage(layer,0,0,w,h);
     } else if(revealPoint?.entryId===entry.id){
@@ -279,7 +297,8 @@
     const canvas=event.currentTarget,e=entryById(canvas.dataset.entryId);if(!e)return;
     if(inkFor(e).length>=MAX_STROKES){status('This page has reached its ink limit. Clear or undo some strokes.',true);return;}
     event.preventDefault();canvas.setPointerCapture(event.pointerId);selectEntry(e.id);
-    const stroke={id:crypto.randomUUID(),ink:currentInk,brush:currentBrush,color:colour,size,points:[pointerPos(canvas,event)]};
+    // New strokes are anchored to the whole scrollable document, not the fixed page viewport.
+    const stroke={id:crypto.randomUUID(),space:'content',ink:currentInk,brush:currentBrush,color:colour,size,points:[pointerPos(canvas,event)]};
     inkFor(e).push(stroke);
     active={pointerId:event.pointerId,entryId:e.id,canvas,stroke};
     paintCanvas(canvas,performance.now());status('Writing in the parchment…');
