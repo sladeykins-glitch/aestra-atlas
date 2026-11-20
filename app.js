@@ -36,16 +36,28 @@ function isEditingNow(){return animating||saveInProgress||Boolean(document.query
 
 const isMobile=()=>window.matchMedia('(max-width:760px)').matches;
 const escapeHtml=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-function getLocal(){try{const data=JSON.parse(localStorage.getItem(STORE)||'null');entries=Array.isArray(data?.entries)?data.entries:structuredClone(INITIAL);chapters=Array.isArray(data?.chapters)?data.chapters:structuredClone(SECTIONS)}catch{entries=structuredClone(INITIAL);chapters=structuredClone(SECTIONS)}}
+function getLocal(){try{const data=JSON.parse(localStorage.getItem(STORE)||'null');entries=Array.isArray(data?.entries)?data.entries:structuredClone(INITIAL);chapters=Array.isArray(data?.chapters)?data.chapters:structuredClone(SECTIONS)}catch{entries=structuredClone(INITIAL);chapters=structuredClone(SECTIONS)}for(const entry of entries){if(!entry.chapter_added_at)entry.chapter_added_at=entry.updated_at||new Date().toISOString()}}
 function saveLocal(){localStorage.setItem(STORE,JSON.stringify({entries,chapters}))}
 function cloudEnabled(){return Boolean(supabase)}
 function isRemote(){return Boolean(supabase&&user&&role)}
 function canEdit(){return !supabase||Boolean(role)}
-function visibleEntries(){return entries.filter(e=>(role==='gm'||!supabase||e.visibility!=='gm') && (`${e.title} ${e.body} ${chapterName(e.section)}`.toLowerCase().includes(search)))}
+// Group by table-of-contents chapter, then by when an entry joined that chapter.
+ // Editing title, text, images or ink does not change a page's position.
+ function visibleEntries(){
+  const order=new Map(chapters.filter(c=>c.id!=='all').map((c,i)=>[c.id,i]));
+  return entries.filter(e=>(role==='gm'||!supabase||e.visibility!=='gm') &&
+   (`${e.title} ${e.body} ${chapterName(e.section)}`.toLowerCase().includes(search)))
+   .sort((a,b)=>{
+    const rank=(order.get(a.section)??999)-(order.get(b.section)??999);
+    if(rank)return rank;
+    const time=(v)=>Date.parse(v.chapter_added_at||v.updated_at||'')||0;
+    return time(a)-time(b);
+   });
+ }
 function chapter(id){return chapters.find(c=>c.id===id)||chapters[0]}
 function chapterName(id){return chapter(id).name}
 function getPages(){return [{kind:'front'},{kind:'contents'},...visibleEntries().map((e,i)=>({kind:'entry',entry:e,entryIndex:i}))]}
-function pageFooter(label,index){return `<div class="page-bottom"><span>${escapeHtml(label)}</span><span>✧</span><span class="page-number">${index===0?'◈':String(index).padStart(2,'0')}</span></div>`}
+function pageFooter(label,index){return `<div class="page-bottom"><span>${escapeHtml(label)}</span><span>✧</span><span class="page-number">${index===0?'◈':index===1?'⌑':String(index-1).padStart(2,'0')}</span></div>`}
 function frontispiece(index){return `<div class="page-inner frontispiece"><div class="front-rose" aria-hidden="true"><span>✥</span></div><div><div class="front-title">A.T.L.A.S.</div><div class="front-caption">AUTONOMOUS TRAVELLER'S<br>LOG & ARCHIVE SYSTEM</div><div class="front-divider">✧ ━━━ ❖ ━━━ ✧</div></div><p class="front-quote">“To wander is to discover. To remember is to preserve.”</p><div class="front-footer">A LIVING RECORD OF OUR JOURNEY<br>THROUGH THE AGE OF FADING LIGHT</div>${pageFooter('THE WORLD REMEMBERS',index)}</div>`}
 function contentsPage(index){
  const toc=chapters.filter(c=>c.id!=='all');const e=visibleEntries();
@@ -225,7 +237,7 @@ async function saveEntry(event){
     await fetchRemote(true);
   }else{
     const image_path=selectedFile?await compressLocalImage(selectedFile):existingImage;
-    savedId=editingId||crypto.randomUUID();const updated={...(old||{}),...payload,image_path,id:savedId,updated_at:new Date().toISOString(),_imageUrl:image_path};
+    savedId=editingId||crypto.randomUUID();const updated={...(old||{}),...payload,image_path,id:savedId,updated_at:new Date().toISOString(),chapter_added_at:old&&old.section===section?(old.chapter_added_at||old.updated_at||new Date().toISOString()):new Date().toISOString(),_imageUrl:image_path};
     entries=editingId?entries.map(e=>e.id===editingId?updated:e):[...entries,updated];
     try{saveLocal()}catch{throw Error('This browser is out of storage. Export a backup or connect a shared archive.')}
   }
@@ -368,7 +380,7 @@ async function fetchRemote(force=false){
  refreshInFlight=true;
  try{
   const before=getPages()[pageIndex];const focusedId=before?.kind==='entry'?before.entry.id:null;
-  const {data,error}=await supabase.from('atlas_entries').select('*').order('updated_at',{ascending:true});if(error)throw error;
+  const {data,error}=await supabase.from('atlas_entries').select('*').order('chapter_added_at',{ascending:true}).order('id',{ascending:true});if(error)throw error;
   // If the user started a page turn while the query was running, defer DOM changes.
   if(!force&&isEditingNow()){deferredRefresh=true;return}
   const results=data||[],oldById=new Map(entries.map(e=>[e.id,e]));
