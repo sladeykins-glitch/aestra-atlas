@@ -54,7 +54,7 @@ function contentsPage(index){
 function entryPage(e,index){
  const sec=chapter(e.section),src=e._imageUrl||(typeof e.image_path==='string'&&e.image_path.startsWith('data:image/')?e.image_path:null);
  const readableBody=String(e.body||'').trim();
- return `<div class="page-inner"><div class="page-topline">A.T.L.A.S. • ${escapeHtml(sec.name)}</div><div class="page-scroll"><div class="page-category">${escapeHtml(sec.icon)} &nbsp; ${escapeHtml(sec.name)}</div><h2 class="page-title">${escapeHtml(e.title)}</h2>${src?`<img class="page-art" alt="Illustration for ${escapeHtml(e.title)}" src="${escapeHtml(src)}">`:`<div class="page-sigil" aria-hidden="true">${escapeHtml(sec.icon)}</div>`}<div class="page-text">${escapeHtml(readableBody||'A blank page awaiting an account from the road...')}</div>${isRemote()?`<div class="page-author">Written by ${escapeHtml(travellerName(e.author_id))} · revision ${Number(e.revision)||1}</div>`:''}${canEdit()?`<button type="button" class="page-edit" data-edit-entry="${escapeHtml(e.id)}">✎ &nbsp; Edit this page</button>`:''}${isRemote()?`<button type="button" class="page-edit page-history" data-history-entry="${escapeHtml(e.id)}">◈ &nbsp; History</button>`:''}</div>${pageFooter(e.visibility==='gm'?'GM · SEALED':'A MEMORY RECORDED',index)}</div>`
+ return `<div class="page-inner"><div class="page-topline">A.T.L.A.S. • ${escapeHtml(sec.name)}</div><div class="page-scroll"><div class="page-category">${escapeHtml(sec.icon)} &nbsp; ${escapeHtml(sec.name)}</div><h2 class="page-title">${escapeHtml(e.title)}</h2>${src?`<img class="page-art" role="button" tabindex="0" title="Click to enlarge illustration" aria-label="Enlarge illustration for ${escapeHtml(e.title)}" alt="Illustration for ${escapeHtml(e.title)}" src="${escapeHtml(src)}">`:`<div class="page-sigil" aria-hidden="true">${escapeHtml(sec.icon)}</div>`}<div class="page-text">${escapeHtml(readableBody||'A blank page awaiting an account from the road...')}</div>${isRemote()?`<div class="page-author">Written by ${escapeHtml(travellerName(e.author_id))} · revision ${Number(e.revision)||1}</div>`:''}${canEdit()?`<button type="button" class="page-edit" data-edit-entry="${escapeHtml(e.id)}">✎ &nbsp; Edit this page</button>`:''}${isRemote()?`<button type="button" class="page-edit page-history" data-history-entry="${escapeHtml(e.id)}">◈ &nbsp; History</button>`:''}</div>${pageFooter(e.visibility==='gm'?'GM · SEALED':'A MEMORY RECORDED',index)}</div>`
 }
 function emptyPage(index){return `<div class="page-inner"><div class="page-topline">THE UNWRITTEN</div><div class="blank-page"><div class="blank-glyph">✧</div><p>The ink has yet to find this page.</p>${canEdit()?`<button class="blank-add" data-write-entry="true">✎ &nbsp; Write a discovery</button>`:''}</div>${pageFooter('THE NEXT JOURNEY',index)}</div>`}
 function pageMarkup(p,index){if(!p)return emptyPage(index);if(p.kind==='front')return frontispiece(index);if(p.kind==='contents')return contentsPage(index);return entryPage(p.entry,index)}
@@ -83,7 +83,66 @@ function closeBook(){if(!opened)return;window.ATLASInk?.setEnabled(false);window
 function openContents(){renderContentsDialog();$('#contentsDialog').showModal()}
 function renderContentsDialog(){const visibles=visibleEntries();let body='';for(const c of chapters.filter(c=>c.id!=='all')){const items=visibles.map((e,i)=>({e,i})).filter(x=>x.e.section===c.id);body+=`<div class="contents-group">${escapeHtml(c.icon)} &nbsp; ${escapeHtml(c.name)} <span>(${items.length})</span></div>`;body+=items.length?items.map(({e,i})=>`<button class="contents-item" data-goto="${i+2}"><span>${escapeHtml(e.title)}</span><span class="dots"></span><small>${String(i+1).padStart(2,'0')}</small></button>`).join(''):'<p style="font-style:italic;color:#8d6e53">No pages recorded in this chapter.</p>'}$('#contentsList').innerHTML=body}
 function editorOptions(){return chapters.filter(c=>c.id!=='all').map(c=>`<option value="${escapeHtml(c.id)}">${escapeHtml(c.name)}</option>`).join('')}
-function previewImage(url){return url?`<img alt="Illustration preview" src="${escapeHtml(url)}">`:''}
+
+/* Enlarged illustration viewer: FLIP-like motion back to its original parchment position. */
+const illustrationZoom=$('#illustrationZoom'),zoomedIllustration=$('#zoomedIllustration');
+let illustrationOrigin=null,illustrationAnimation=null,illustrationClosing=false;
+const prefersStillIllustrations=()=>window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+function setIllustrationBounds(rect){
+ Object.assign(zoomedIllustration.style,{
+  left:rect.left+'px',top:rect.top+'px',
+  width:Math.max(1,rect.width)+'px',height:Math.max(1,rect.height)+'px'
+ });
+}
+function illustrationTarget(source){
+ const r=source.getBoundingClientRect(),aspect=source.naturalWidth>0&&source.naturalHeight>0?source.naturalWidth/source.naturalHeight:(r.width/Math.max(1,r.height));
+ let w=window.innerWidth*.90,h=w/aspect;
+ const maxH=window.innerHeight*.83;
+ if(h>maxH){h=maxH;w=h*aspect}
+ return {left:(window.innerWidth-w)/2,top:(window.innerHeight-h)/2,width:w,height:h};
+}
+function tweenIllustration(from,to,duration,done){
+ setIllustrationBounds(from);
+ if(prefersStillIllustrations()||!zoomedIllustration.animate){setIllustrationBounds(to);done?.();return}
+ const frame=r=>({left:r.left+'px',top:r.top+'px',width:r.width+'px',height:r.height+'px'});
+ const anim=zoomedIllustration.animate([frame(from),frame(to)],{duration,easing:'cubic-bezier(.22,.72,.19,1)',fill:'forwards'});
+ illustrationAnimation=anim;
+ anim.finished.then(()=>{
+  if(illustrationAnimation!==anim)return;
+  illustrationAnimation=null;anim.cancel();setIllustrationBounds(to);done?.();
+ }).catch(()=>{});
+}
+function showIllustration(source){
+ if(illustrationZoom.open||!source?.currentSrc&&!source?.src)return;
+ if(window.ATLASInk?.isEnabled()||window.ATLASInk?.isRevealing())return;
+ illustrationOrigin=source;illustrationClosing=false;
+ const start=source.getBoundingClientRect();
+ zoomedIllustration.src=source.currentSrc||source.src;
+ zoomedIllustration.alt=source.alt||'Expanded book illustration';
+ setIllustrationBounds(start);
+ illustrationZoom.classList.remove('is-closing');
+ illustrationZoom.showModal();
+ requestAnimationFrame(()=>{
+  if(!illustrationZoom.open||illustrationClosing)return;
+  tweenIllustration(start,illustrationTarget(source),350);
+ });
+}
+function dismissIllustration(){
+ if(!illustrationZoom.open||illustrationClosing)return;
+ illustrationClosing=true;illustrationZoom.classList.add('is-closing');
+ const current=zoomedIllustration.getBoundingClientRect();
+ if(illustrationAnimation){illustrationAnimation.cancel();illustrationAnimation=null}
+ const valid=illustrationOrigin?.isConnected&&illustrationOrigin.getClientRects().length;
+ const destination=valid?illustrationOrigin.getBoundingClientRect():{left:window.innerWidth/2,top:window.innerHeight/2,width:1,height:1};
+ const source=illustrationOrigin;
+ tweenIllustration(current,destination,290,()=>{
+  illustrationZoom.close();illustrationZoom.classList.remove('is-closing');
+  zoomedIllustration.removeAttribute('src');illustrationOrigin=null;illustrationClosing=false;
+  if(source?.isConnected&&source.getClientRects().length)source.focus({preventScroll:true});
+ });
+}
+
+function previewImage(url){return url?`<img role="button" tabindex="0" title="Click to enlarge illustration" aria-label="Enlarge illustration preview" alt="Illustration preview" src="${escapeHtml(url)}">`:''}
 function openEditor(id=null){if(!canEdit()){openSettings();return}const e=id?entries.find(x=>x.id===id):null;if(id&&!e)return;
  editingId=id;selectedFile=null;existingImage=e?.image_path||null;if(imagePreviewUrl){URL.revokeObjectURL(imagePreviewUrl);imagePreviewUrl=null}
  $('#editorHeading').textContent=e?'Amend an inscribed page':'Write upon a new page';$('#editorSection').innerHTML=editorOptions();
@@ -346,6 +405,19 @@ $('#newBtn').addEventListener('click',()=>openEditor());$('#contentsBtn').addEve
 $('#searchInput').addEventListener('input',e=>{search=e.target.value.toLowerCase().trim();pageIndex=search?2:0;renderBook()});
 document.querySelectorAll('[data-close]').forEach(b=>b.addEventListener('click',()=>$('#'+b.dataset.close).close()));
 $('#editorDialog').addEventListener('close',()=>{if(deferredRefresh){deferredRefresh=false;scheduleRemoteRefresh()}});
+
+/* Page images and editor previews use the same viewer; any tap closes it. */
+document.addEventListener('click',event=>{
+ const image=event.target.closest?.('.page-art, .image-preview img');
+ if(image)showIllustration(image);
+});
+document.addEventListener('keydown',event=>{
+ const image=event.target.closest?.('.page-art, .image-preview img');
+ if(image&&(event.key==='Enter'||event.key===' ')){event.preventDefault();showIllustration(image)}
+});
+illustrationZoom.addEventListener('click',dismissIllustration);
+illustrationZoom.addEventListener('cancel',event=>{event.preventDefault();dismissIllustration()});
+
 $('#bookSpread').addEventListener('click',e=>{const history=e.target.closest('[data-history-entry]');if(history){openHistory(history.dataset.historyEntry);return}const edit=e.target.closest('[data-edit-entry]');if(edit){openEditor(edit.dataset.editEntry);return}if(e.target.closest('[data-write-entry]')){openEditor();return}if(e.target.closest('[data-show-contents]')){openContents();return}const chapterLink=e.target.closest('[data-jump-chapter]');if(chapterLink){const i=visibleEntries().findIndex(x=>x.section===chapterLink.dataset.jumpChapter);if(i>=0)jumpTo(2+i);else openContents()}});
 $('#contentsList').addEventListener('click',e=>{const link=e.target.closest('[data-goto]');if(link){$('#contentsDialog').close();jumpTo(Number(link.dataset.goto))}});
 $('#imageInput').addEventListener('change',e=>{selectedFile=e.target.files?.[0]||null;if(imagePreviewUrl)URL.revokeObjectURL(imagePreviewUrl);imagePreviewUrl=selectedFile?URL.createObjectURL(selectedFile):null;$('#imagePreview').innerHTML=previewImage(imagePreviewUrl)});
