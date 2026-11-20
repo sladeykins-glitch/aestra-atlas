@@ -158,6 +158,12 @@
   </div>
 </dialog>
 <dialog id="historyDialog" class="manuscript-dialog history-dialog"><div class="parchment-dialog"><div class="dialog-heading"><div><div class="dialog-eyebrow">THE CHRONICLE OF CHANGES</div><h2 id="historyTitle">Page history</h2></div><button type="button" class="x-button" data-close="historyDialog" aria-label="Close history">×</button></div><p class="contents-intro">Earlier versions are preserved when a page changes. The GM and party can restore a visible page.</p><div id="historyList" class="history-list"></div><p id="historyMsg" class="form-message" role="status"></p><div class="dialog-actions"><button type="button" class="muted-action" data-close="historyDialog">Return to book</button></div></div></dialog>
+
+<!-- Full-screen illustration viewer. Its image animates from, and back to, the book page. -->
+<dialog id="illustrationZoom" class="illustration-zoom" aria-label="Expanded illustration; click anywhere or press Escape to return to the page">
+  <img id="zoomedIllustration" class="zoomed-illustration" alt="">
+  <p class="illustration-zoom-hint" aria-hidden="true">✧ &nbsp; TAP ANYWHERE TO RETURN TO THE PAGE &nbsp; ✧</p>
+</dialog>
 <script src="app.js" defer></script>
 <script src="ink.js" defer></script>
 </body>
