@@ -160,3 +160,62 @@
 /* Scroll-bound marginalia: the artwork and its canvas share one scrolling coordinate space. */
 .page-content{position:relative;min-height:100%;display:flow-root}
 .page-content>.ink-canvas{position:absolute;inset:0;width:100%;height:100%}
+
+/* ─── A.T.L.A.S. V8.1: scrapbook-only layouts (classic pages untouched) ─── */
+.scrapbook-new-button{border-color:#4da7a2;color:#b9efdd;background:linear-gradient(135deg,#254846,#242019)}
+.scrapbook-new-button:hover{background:#31615c}
+.scrapbook-stage{position:relative;width:100%;aspect-ratio:5 / 7;background:linear-gradient(140deg,#f2ddb066,#edd3a360),url('assets/aged-parchment.webp') center/cover;border:1px solid #b99865;box-shadow:inset 0 0 25px #75523238;overflow:hidden;container-type:inline-size}
+.scrapbook-item{position:absolute;min-width:0;min-height:0;overflow:hidden;box-sizing:border-box}
+.scrapbook-note{background:#fff8e125;color:#50331e;border:1px solid #b28a5b78;box-shadow:0 2px 7px #4933231a}
+.scrapbook-note-content{width:100%;height:100%;padding:5%;font:500 clamp(10px,3.2cqw,21px)/1.3 'Cormorant Garamond',Georgia,serif;white-space:pre-wrap;overflow:hidden;overflow-wrap:anywhere}
+.scrapbook-picture{padding:2%;background:#e7cca0;border:2px solid #ae8052;box-shadow:2px 3px 7px #5e412b55}
+.scrapbook-picture img{display:block;width:100%;height:100%;object-fit:contain;mix-blend-mode:multiply}
+.scrap-img{cursor:zoom-in}
+.scrap-img:focus-visible{outline:2px solid #0b7f85;outline-offset:-2px}
+.scrapbook-empty,.scrapbook-editor-empty{position:absolute;inset:0;display:grid;place-items:center;padding:12%;text-align:center;font:italic clamp(13px,3.4cqw,24px)/1.35 'IM Fell English',serif;color:#926e49}
+.scrapbook-image-unavailable{font:italic clamp(10px,2.6cqw,16px)/1.3 'Cormorant Garamond',serif;color:#825b3e;text-align:center;display:grid;place-items:center;height:100%}
+.scrapbook-page .page-author{color:#8b684e;font:italic 14px/1.4 'Cormorant Garamond',serif;margin:10px 0 3px}
+.scrapbook-page .page-edit{display:inline-block;margin-right:10px}
+.scrapbook-dialog{width:min(1180px,96vw);max-width:96vw;height:min(95dvh,1050px);max-height:95dvh;margin:auto;padding:0;overflow:auto;border:9px solid #302017;outline:2px solid #a77d49;color:#4a3024;background:#dfc497 url('assets/aged-parchment.webp') center/cover;box-shadow:0 20px 75px #000b}
+.scrapbook-dialog::backdrop{background:#090b0dda;backdrop-filter:blur(4px)}
+.scrapbook-dialog-inner{padding:clamp(14px,2.8vw,30px)}
+.scrapbook-dialog .dialog-heading{margin-bottom:12px}
+.scrapbook-dialog .dialog-heading h2{font-size:clamp(25px,3vw,37px)}
+.scrapbook-meta{display:grid;grid-template-columns:minmax(140px,2fr) minmax(110px,1fr) minmax(120px,1fr);gap:12px;align-items:start}
+.scrapbook-meta .field{margin-bottom:12px}
+.scrapbook-meta input,.scrapbook-meta select{height:42px;font-size:17px}
+.scrapbook-toolbar{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:11px 0;border-top:1px solid #a47a5170;border-bottom:1px solid #a47a5170}
+.scrapbook-toolbar-tip{margin-left:auto;max-width:350px;font:italic 17px/1.3 'Cormorant Garamond',serif;color:#76563e}
+.scrapbook-workspace{display:grid;grid-template-columns:minmax(0,1fr) 220px;align-items:start;gap:17px;padding-top:15px}
+.scrapbook-stage-wrap{width:100%;max-width:600px;margin:auto;min-width:0}
+.scrapbook-deselect{display:block;margin:0 0 7px auto;padding:4px 9px;border:1px solid #9b7b56;background:#f7e5c988;color:#60432d;font:600 10px/1.3 'Cinzel',serif}
+.scrapbook-editor-stage{touch-action:none;user-select:none;cursor:crosshair;background-color:#f0d7a7}
+.scrapbook-design-item{cursor:grab;touch-action:none}
+.scrapbook-design-item:active{cursor:grabbing}
+.scrapbook-design-item.is-selected{outline:2px dashed #16878a;outline-offset:2px;z-index:3}
+.scrapbook-drag-hint{position:absolute;left:1px;top:0;color:#00777c;background:#f8e7cbdc;font:15px/1 Georgia,serif;padding:2px;pointer-events:none;opacity:0}
+.scrapbook-design-item.is-selected .scrapbook-drag-hint{opacity:1}
+.scrapbook-resize-handle{position:absolute;right:0;bottom:0;width:21px;height:21px;z-index:6;background:linear-gradient(135deg,transparent 40%,#16888b 43%,#96ffff 100%);border-left:1px solid #348b86;border-top:1px solid #348b86;cursor:nwse-resize;touch-action:none}
+.scrapbook-editor-stage .scrapbook-edit-image{pointer-events:none}
+.scrapbook-inspector{position:sticky;top:14px;border:1px solid #9e7650;background:#fff2d8ad;padding:13px;color:#664531;max-height:75dvh;overflow:auto}
+.scrapbook-inspector h3{font:600 18px/1.3 'Cinzel',serif;margin:0 0 12px}
+.scrapbook-inspector p{font:italic 16px/1.25 'Cormorant Garamond',serif}
+.scrapbook-inspector textarea{min-height:150px;font-size:18px}
+.scrapbook-footer{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-top:20px;padding-top:16px;border-top:1px solid #9f7658}
+.scrapbook-save-status{flex:1;font:italic 17px/1.3 'Cormorant Garamond',serif;color:#77573e}
+@media(max-width:900px){
+ .scrapbook-workspace{grid-template-columns:1fr}
+ .scrapbook-stage-wrap{max-width:600px}
+ .scrapbook-inspector{position:static;max-height:none}
+ .scrapbook-inspector .field{max-width:600px}
+}
+@media(max-width:600px){
+ .scrapbook-meta{grid-template-columns:1fr 1fr;gap:6px}
+ .scrapbook-meta .field:first-child{grid-column:1 / -1}
+ .scrapbook-dialog{width:98vw;max-width:98vw;border-width:6px}
+ .scrapbook-dialog-inner{padding:10px}
+ .scrapbook-toolbar-tip{max-width:none;font-size:14px}
+ .scrapbook-toolbar .gold-action{font-size:10px;padding:9px 8px}
+ .scrapbook-inspector{padding:10px}
+ .scrapbook-new-button{padding:5px 8px}
+}
